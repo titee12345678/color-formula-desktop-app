@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบค้นหาและจัดการสูตรสี</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; }
+        .formula-card { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+        .formula-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .nav-btn.active { background-color: #10B981; color: white; }
+        .page-btn { transition: background-color 0.2s, color 0.2s; }
+        .page-btn.active { background-color: #10B981; color: white; border-color: #10B981; }
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .loader { border-top-color: #3498db; -webkit-animation: spin 1s linear infinite; animation: spin 1s linear infinite; }
+        @-webkit-keyframes spin { 0% { -webkit-transform: rotate(0deg); } 100% { -webkit-transform: rotate(360deg); } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .drop-zone { border: 2px dashed #ccc; border-radius: 0.5rem; padding: 2.5rem; text-align: center; cursor: pointer; transition: background-color 0.2s, border-color 0.2s; }
+        .drop-zone--over { background-color: #e9e9e9; border-color: #3498db; }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <nav class="bg-white shadow-lg sticky top-0 z-20">
+        <div class="container mx-auto px-4 md:px-8">
+            <div class="flex justify-center items-center py-3">
+                <div class="flex space-x-2 md:space-x-4 bg-gray-200 p-1 rounded-lg">
+                    <button id="navMainBtn" class="nav-btn px-4 py-2 text-sm md:text-base font-semibold text-gray-700 rounded-md transition">ค้นหาสูตร</button>
+                    <button id="navFormulaBtn" class="nav-btn px-4 py-2 text-sm md:text-base font-semibold text-gray-700 rounded-md transition">ค้นหาจากแม่สี</button>
+                    <button id="navImportBtn" class="nav-btn px-4 py-2 text-sm md:text-base font-semibold text-gray-700 rounded-md transition">Import Excel</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Search View -->
+    <div id="main-view">
+        <div class="container mx-auto p-4 md:p-8">
+            <header class="text-center mb-8">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-700">ค้นหาสูตรสีทั่วไป</h1>
+            </header>
+            <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                    <div>
+                        <label for="bookSearch" class="block text-sm font-medium text-gray-700 mb-1">เล่มที่</label>
+                        <input type="text" id="bookSearch" placeholder="เช่น DATA2025..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    <div>
+                        <label for="resultCodeSearch" class="block text-sm font-medium text-gray-700 mb-1">รหัสสี</label>
+                        <input type="text" id="resultCodeSearch" placeholder="เช่น BN0173..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    <div>
+                        <label for="yarnTypeSearch" class="block text-sm font-medium text-gray-700 mb-1">ชนิดด้าย</label>
+                        <input type="text" id="yarnTypeSearch" placeholder="เช่น PC16/2..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    <div>
+                        <label for="yarnModelSearch" class="block text-sm font-medium text-gray-700 mb-1">รุ่นด้าย</label>
+                        <input type="text" id="yarnModelSearch" placeholder="เช่น DG..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                    <div>
+                        <label for="pageFilter" class="block text-sm font-medium text-gray-700 mb-1">หน้า</label>
+                        <input type="number" id="pageFilter" placeholder="เลขหน้า..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                    </div>
+                </div>
+            </div>
+            <div id="mainResultsCount" class="mb-4 text-gray-600"></div>
+            <div id="mainResultsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <div id="mainPagination" class="mt-8 flex justify-center items-center space-x-2"></div>
+            <div id="mainNoResults" class="hidden text-center py-16"><p class="text-xl text-gray-500">ไม่พบสูตรสีที่ตรงกับเงื่อนไข</p></div>
+        </div>
+    </div>
+
+    <!-- Formula Search View -->
+    <div id="formula-search-view" class="hidden">
+         <div class="container mx-auto p-4 md:p-8">
+            <header class="text-center mb-8">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-700">ค้นหาจากส่วนผสมสูตรสี</h1>
+                <p class="text-gray-500 mt-2">ระบุรหัสแม่สีและเปอร์เซ็นต์ หรือใช้เครื่องมือเลือกสี</p>
+            </header>
+            <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                <div id="formula-criteria-container" class="space-y-4"></div>
+                <div class="mt-4 flex flex-wrap gap-4 items-center">
+                    <button id="addCriterionBtn" class="px-5 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">เพิ่มรหัสแม่สี</button>
+                    <button id="formulaSearchBtn" class="px-5 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">ค้นหาตามส่วนผสม</button>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <h3 class="text-lg font-semibold text-center text-gray-800 mb-4">หรือ ค้นหาจากสีตัวอย่างที่ใกล้เคียงที่สุด</h3>
+                    <div class="flex items-center justify-center gap-4">
+                        <label for="colorPickerInput" class="font-medium">เลือกสี:</label>
+                        <input type="color" id="colorPickerInput" value="#8c8a88" class="w-16 h-10 border border-gray-300 rounded-lg cursor-pointer p-1">
+                        <button id="colorSearchBtn" class="px-5 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition flex items-center gap-2">
+                            <i class="fas fa-search"></i> ค้นหาตามสี
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div id="formulaResultsCount" class="mb-4 text-gray-600"></div>
+            <div id="formulaResultsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <div id="formulaPagination" class="mt-8 flex justify-center items-center space-x-2"></div>
+            <div id="formulaNoResults" class="hidden text-center py-16"><p class="text-xl text-gray-500">ไม่พบสูตรสีที่ตรงกับเงื่อนไข</p></div>
+        </div>
+    </div>
+    
+    <!-- Import View -->
+    <div id="import-view" class="hidden">
+        <div class="container mx-auto p-4 md:p-8">
+             <div class="max-w-2xl mx-auto text-center">
+                 <h1 class="text-3xl md:text-4xl font-bold text-gray-700">อัปโหลดไฟล์ของคุณ</h1>
+                 <p class="text-gray-500 mt-2">รองรับไฟล์ XLSX (รูปแบบวันที่ DD/MM/YYYY)</p>
+            </div>
+            <div class="max-w-2xl mx-auto bg-white p-8 mt-8 rounded-xl shadow-lg">
+                <div class="flex flex-col items-center">
+                    <div id="drop-zone" class="drop-zone w-full">
+                        <span id="drop-zone-prompt">
+                            <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
+                            <p class="font-semibold">คลิกเพื่อเลือกไฟล์</p>
+                            <p class="text-sm text-gray-500">ยังไม่ได้เลือกไฟล์</p>
+                        </span>
+                    </div>
+                    <button type="button" id="importSubmitBtn" class="w-full mt-6 px-5 py-3 text-base font-medium text-center text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:ring-4 focus:outline-none focus:ring-indigo-300 disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+                        <span id="importButtonText">นำเข้าข้อมูล</span>
+                        <div id="importLoader" class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-6 w-6 mx-auto hidden"></div>
+                    </button>
+                </div>
+                <div class="text-center mt-6">
+                     <button id="downloadTemplateBtn" class="text-indigo-600 hover:text-indigo-800 font-semibold transition">
+                        <i class="fas fa-download mr-2"></i>ดาวน์โหลดเทมเพลตตัวอย่าง (.xlsx)
+                    </button>
+                </div>
+                <div id="importStatus" class="mt-4 text-center"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal-overlay hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md m-4">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-semibold text-gray-800">แก้ไขข้อมูลสูตรสี</h3>
+                <button id="closeEditModalBtn" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <form id="editForm">
+                    <input type="hidden" id="editFormulaId">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="editBook" class="block text-sm font-medium text-gray-700">เล่ม</label>
+                            <input type="text" id="editBook" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label for="editSwatchColor" class="block text-sm font-medium text-gray-700">สีตัวอย่าง</label>
+                             <input type="color" id="editSwatchColor" class="mt-1 w-full h-10 border border-gray-300 rounded-lg p-1">
+                        </div>
+                        <div>
+                            <label for="editPage" class="block text-sm font-medium text-gray-700">หน้าที่</label>
+                            <input type="number" id="editPage" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                         <div>
+                            <label for="editRow" class="block text-sm font-medium text-gray-700">แถวที่</label>
+                            <input type="number" id="editRow" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+                 <button id="cancelEditBtn" type="button" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300">ยกเลิก</button>
+                <button id="saveEditBtn" type="button" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700">บันทึก</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal-overlay hidden">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md m-4">
+            <div class="p-6 border-b flex justify-between items-center">
+                <h3 class="text-xl font-semibold text-gray-800">ยืนยันการลบข้อมูล</h3>
+                <button id="closeDeleteModalBtn" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-600 mb-4">คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลนี้? การกระทำนี้ไม่สามารถย้อนกลับได้</p>
+                <input type="hidden" id="deleteFormulaId">
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+                 <button id="cancelDeleteBtn" type="button" class="px-4 py-2 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300">ยกเลิก</button>
+                <button id="confirmDeleteBtn" type="button" class="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700">ยืนยันการลบ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notificationToast" class="fixed bottom-5 right-5 bg-gray-800 text-white py-3 px-6 rounded-lg shadow-lg transition-transform transform translate-y-20 opacity-0 z-[1001]">
+        <p id="notificationMessage"></p>
+    </div>
+
+
+    <script>
+        // --- GLOBAL STATE & CONSTANTS ---
+        let allColorFormulas = [];
+        const ITEMS_PER_PAGE = 12;
+        let mainCurrentPage = 1, mainFilteredResults = [];
+        let formulaCurrentPage = 1, formulaFilteredResults = [];
+        let selectedExcelFilePath = null;
+        
+        // --- UI ELEMENTS ---
+        const mainView = document.getElementById('main-view');
+        const formulaSearchView = document.getElementById('formula-search-view');
+        const importView = document.getElementById('import-view');
+        const editModal = document.getElementById('editModal');
+        const deleteModal = document.getElementById('deleteModal');
+        const notificationToast = document.getElementById('notificationToast');
+        const notificationMessage = document.getElementById('notificationMessage');
+        const navMainBtn = document.getElementById('navMainBtn');
+        const navFormulaBtn = document.getElementById('navFormulaBtn');
+        const navImportBtn = document.getElementById('navImportBtn');
+        const mainInputs = { book: document.getElementById('bookSearch'), resultCode: document.getElementById('resultCodeSearch'), yarnType: document.getElementById('yarnTypeSearch'), yarnModel: document.getElementById('yarnModelSearch'), page: document.getElementById('pageFilter') };
+        const mainResultsGrid = document.getElementById('mainResultsGrid');
+        const mainResultsCount = document.getElementById('mainResultsCount');
+        const mainNoResults = document.getElementById('mainNoResults');
+        const mainPagination = document.getElementById('mainPagination');
+        const criteriaContainer = document.getElementById('formula-criteria-container');
+        const formulaResultsGrid = document.getElementById('formulaResultsGrid');
+        const formulaResultsCount = document.getElementById('formulaResultsCount');
+        const formulaNoResults = document.getElementById('formulaNoResults');
+        const formulaPagination = document.getElementById('formulaPagination');
+        
+        // --- API & DATA HANDLING ---
+        async function fetchFormulas() {
+            try {
+                mainResultsGrid.innerHTML = '<div class="col-span-full text-center p-8"><div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32 mx-auto"></div><p class="mt-4">กำลังโหลดข้อมูล...</p></div>';
+                allColorFormulas = await window.electronAPI.getFormulas();
+                filterMainDisplay(); 
+            } catch (error) {
+                console.error("Could not fetch formulas:", error);
+                mainResultsGrid.innerHTML = `<p class="text-red-500 text-center col-span-full">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>`;
+            }
+        }
+
+        // --- DISPLAY LOGIC ---
+        function displayResults(items, gridEl, countEl, noResultsEl, paginationEl, currentPage, viewType) {
+            gridEl.innerHTML = '';
+            
+            if (!items || items.length === 0) {
+                 countEl.textContent = 'พบ 0 รายการ';
+                noResultsEl.classList.remove('hidden');
+                paginationEl.innerHTML = '';
+                return;
+            }
+             countEl.textContent = `พบ ${items.length} รายการ`;
+            noResultsEl.classList.add('hidden');
+            
+            const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIndex = startIndex + ITEMS_PER_PAGE;
+            const paginatedItems = items.slice(startIndex, endIndex);
+
+            paginatedItems.forEach(item => {
+                const formulaObject = item.similarity !== undefined ? item.formula : item;
+                const similarity = item.similarity;
+                const similarityHtml = similarity !== undefined ? `<div class="text-center bg-blue-100 text-blue-800 font-bold py-2 px-4 rounded-lg my-4">ความใกล้เคียง: ${similarity.toFixed(1)}%</div>` : '';
+                const formulaListHtml = formulaObject.formula.map(ing => `<li class="flex justify-between items-center"><span class="text-gray-700">${ing.motherCode} <span class="text-gray-500 text-xs">${ing.name || ''}</span></span><span class="font-mono text-gray-800">${ing.percentage}</span></li>`).join('');
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-xl shadow-md overflow-hidden formula-card';
+                card.innerHTML = `
+                    <div class="p-6">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="uppercase tracking-wide text-sm text-indigo-600 font-semibold">${formulaObject.resultCode}</div>
+                                <p class="block mt-1 text-lg leading-tight font-medium text-black">${formulaObject.yarnType} - ${formulaObject.yarnModel}</p>
+                                <p class="mt-2 text-gray-500 text-sm">วันที่: ${formulaObject.date}</p>
+                            </div>
+                            <div class="w-16 h-16 rounded-lg flex-shrink-0" style="background-color: ${formulaObject.swatchColor}; border: 1px solid #ddd;"></div>
+                        </div>
+                        ${similarityHtml}
+                        <div class="text-center bg-green-100 text-green-800 font-bold py-2 px-4 rounded-lg my-4">
+                            เล่ม: ${formulaObject.book}, หน้าที ${formulaObject.page}, แถว ${formulaObject.row}
+                        </div>
+                        <div class="pt-4 border-t border-gray-200">
+                            <h4 class="font-semibold text-gray-700 mb-2">สูตรสี (%):</h4>
+                            <ul class="space-y-1 text-sm">${formulaListHtml}</ul>
+                        </div>
+                        <div class="pt-4 mt-4 border-t border-gray-200 text-right space-x-2">
+                            <button class="edit-btn px-4 py-2 bg-gray-200 text-gray-800 text-sm font-semibold rounded-lg hover:bg-gray-300 transition">แก้ไข</button>
+                            <button class="delete-btn px-4 py-2 bg-red-100 text-red-700 text-sm font-semibold rounded-lg hover:bg-red-200 transition">ลบ</button>
+                        </div>
+                    </div>`;
+                card.querySelector('.edit-btn').addEventListener('click', () => openEditModal(formulaObject));
+                card.querySelector('.delete-btn').addEventListener('click', () => openDeleteModal(formulaObject));
+                gridEl.appendChild(card);
+            });
+            
+            renderPagination(items.length, currentPage, paginationEl, viewType);
+        }
+        
+        function renderPagination(totalItems, currentPage, containerEl, viewType) {
+            containerEl.innerHTML = '';
+            const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+            if (totalPages <= 1) return;
+            const createBtn = (text, page, isDisabled = false, isCurrent = false) => {
+                const btn = document.createElement('button');
+                btn.innerHTML = text;
+                btn.disabled = isDisabled;
+                btn.className = `page-btn px-4 py-2 border rounded-md font-semibold ${isCurrent ? 'active' : 'bg-white'}`;
+                if (!isDisabled) {
+                    btn.onclick = () => {
+                         if (viewType === 'main') {
+                           mainCurrentPage = page;
+                           displayResults(mainFilteredResults, mainResultsGrid, mainResultsCount, mainNoResults, mainPagination, mainCurrentPage, 'main');
+                         } else {
+                           formulaCurrentPage = page;
+                           displayResults(formulaFilteredResults, formulaResultsGrid, formulaResultsCount, formulaNoResults, formulaPagination, formulaCurrentPage, 'formula');
+                         }
+                    };
+                }
+                return btn;
+            };
+            containerEl.appendChild(createBtn('&laquo;', currentPage - 1, currentPage === 1));
+            let hasLeftEllipsis = false, hasRightEllipsis = false;
+            for (let i = 1; i <= totalPages; i++) {
+                 if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    containerEl.appendChild(createBtn(i, i, false, i === currentPage));
+                 } else if (i < currentPage && !hasLeftEllipsis) {
+                    containerEl.appendChild(createBtn('...', 0, true)); hasLeftEllipsis = true;
+                 } else if (i > currentPage && !hasRightEllipsis) {
+                    containerEl.appendChild(createBtn('...', 0, true)); hasRightEllipsis = true;
+                 }
+            }
+            containerEl.appendChild(createBtn('&raquo;', currentPage + 1, currentPage === totalPages));
+        }
+        
+        function filterMainDisplay() {
+            const filters = Object.fromEntries(Object.entries(mainInputs).map(([key, input]) => [key, input.value.toLowerCase()]));
+            mainFilteredResults = allColorFormulas.filter(f => 
+                (f.book ? f.book.toLowerCase().includes(filters.book) : true) &&
+                f.resultCode.toLowerCase().includes(filters.resultCode) &&
+                f.yarnType.toLowerCase().includes(filters.yarnType) &&
+                f.yarnModel.toLowerCase().includes(filters.yarnModel) &&
+                (filters.page ? f.page.toString() === filters.page : true)
+            );
+            mainCurrentPage = 1;
+            displayResults(mainFilteredResults, mainResultsGrid, mainResultsCount, mainNoResults, mainPagination, 1, 'main');
+        }
+
+        function addCriterionRow() {
+            const rowId = `criterion-${Date.now()}`;
+            const row = document.createElement('div');
+            row.id = rowId;
+            row.className = 'grid grid-cols-1 md:grid-cols-6 gap-2 items-center';
+            row.innerHTML = `
+                <div class="md:col-span-3">
+                    <label class="text-sm font-medium text-gray-700">รหัสแม่สี</label>
+                    <input type="text" placeholder="เช่น D01231..." class="criterion-code w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-sm font-medium text-gray-700">% สี (ถ้ามี)</label>
+                    <input type="number" step="0.0001" placeholder="เช่น 0.212" class="criterion-percent w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div class="text-right pt-5">
+                    <button onclick="document.getElementById('${rowId}').remove()" class="px-3 py-2 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600">ลบ</button>
+                </div>`;
+            criteriaContainer.appendChild(row);
+        }
+        
+        function handleFormulaSearch() {
+            const searchCriteria = Array.from(criteriaContainer.querySelectorAll('.grid')).map(node => ({
+                code: node.querySelector('.criterion-code').value.toLowerCase().trim(),
+                percent: parseFloat(node.querySelector('.criterion-percent').value)
+            })).filter(c => c.code);
+
+            if (searchCriteria.length === 0) {
+                formulaFilteredResults = [];
+                formulaResultsCount.textContent = '';
+                displayResults([], formulaResultsGrid, formulaResultsCount, formulaNoResults, formulaPagination, 1, 'formula');
+                return;
+            }
+
+            const results = [];
+            allColorFormulas.forEach(cf => {
+                const hasAllCodes = searchCriteria.every(crit => cf.formula.some(ing => ing.motherCode.toLowerCase().includes(crit.code)));
+                if (hasAllCodes) {
+                    let totalSimilarity = 0;
+                    let criteriaCount = searchCriteria.length;
+                    
+                    searchCriteria.forEach(crit => {
+                        const ingredient = cf.formula.find(ing => ing.motherCode.toLowerCase().includes(crit.code));
+                        if (ingredient) {
+                            if (!isNaN(crit.percent)) {
+                                const difference = Math.abs(crit.percent - ingredient.percentage);
+                                const similarity = Math.max(0, 100 * (1 - (difference / Math.max(0.1, crit.percent))));
+                                totalSimilarity += similarity;
+                            } else {
+                                totalSimilarity += 100;
+                            }
+                        }
+                    });
+                    
+                    const averageSimilarity = totalSimilarity / criteriaCount;
+                    results.push({ formula: cf, similarity: averageSimilarity });
+                }
+            });
+
+            if (results.length > 0) {
+                results.sort((a, b) => b.similarity - a.similarity);
+                formulaFilteredResults = results;
+                const isExact = results.some(r => r.similarity === 100);
+                formulaResultsCount.innerHTML = isExact ? `พบสูตรที่ตรงกัน ${results.filter(r => r.similarity === 100).length} รายการ` : `ไม่พบสูตรที่ตรงกัน <span class="font-bold">แต่พบผลลัพธ์ที่ใกล้เคียง ${results.length} รายการ</span>`;
+            } else {
+                formulaFilteredResults = [];
+                formulaResultsCount.textContent = "ไม่พบสูตรสีที่ตรงกับเงื่อนไข";
+            }
+            
+            formulaCurrentPage = 1;
+            displayResults(formulaFilteredResults, formulaResultsGrid, formulaResultsCount, formulaNoResults, formulaPagination, 1, 'formula');
+        }
+
+        function setActiveView(viewName) {
+            const views = { main: mainView, formula: formulaSearchView, import: importView };
+            const buttons = { main: navMainBtn, formula: navFormulaBtn, import: navImportBtn };
+            Object.entries(views).forEach(([key, view]) => {
+                view.classList.toggle('hidden', key !== viewName);
+                buttons[key].classList.toggle('active', key === viewName);
+            });
+            if (viewName === 'formula' && criteriaContainer.children.length === 0) addCriterionRow();
+        }
+
+        function showNotification(message, isSuccess = true) {
+            notificationMessage.textContent = message;
+            notificationToast.className = `fixed bottom-5 right-5 text-white py-3 px-6 rounded-lg shadow-lg transition-transform transform translate-y-0 opacity-100 ${isSuccess ? 'bg-green-600' : 'bg-red-600'}`;
+            setTimeout(() => {
+                notificationToast.className = notificationToast.className.replace('translate-y-0 opacity-100', 'translate-y-20 opacity-0');
+            }, 3000);
+        }
+
+        // --- Color Picker Logic ---
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+        }
+
+        function colorDistance(rgb1, rgb2) {
+            if (!rgb1 || !rgb2) return Infinity;
+            return Math.sqrt(Math.pow(rgb1.r - rgb2.r, 2) + Math.pow(rgb1.g - rgb2.g, 2) + Math.pow(rgb1.b - rgb2.b, 2));
+        }
+
+        function handleColorSearch() {
+            const pickedColorHex = document.getElementById('colorPickerInput').value;
+            const pickedColorRgb = hexToRgb(pickedColorHex);
+            if (!pickedColorRgb) return;
+
+            const maxDistance = Math.sqrt(Math.pow(255, 2) * 3);
+            
+            const colorMatches = allColorFormulas.map(cf => {
+                const formulaRgb = hexToRgb(cf.swatchColor);
+                const distance = colorDistance(pickedColorRgb, formulaRgb);
+                const similarity = 100 * (1 - distance / maxDistance);
+                return { formula: cf, similarity };
+            }).filter(item => item.similarity > 0); 
+
+            colorMatches.sort((a, b) => b.similarity - a.similarity);
+
+            formulaFilteredResults = colorMatches;
+            formulaResultsCount.innerHTML = `พบสูตรสีที่ใกล้เคียงกับ <span class="inline-block w-4 h-4 rounded-full align-middle" style="background-color:${pickedColorHex}"></span> ${colorMatches.length} รายการ`;
+            displayResults(formulaFilteredResults, formulaResultsGrid, formulaResultsCount, formulaNoResults, formulaPagination, 1, 'formula');
+        }
+
+        // --- Edit Modal Logic ---
+        function openEditModal(formula) {
+            document.getElementById('editFormulaId').value = formula.id;
+            document.getElementById('editBook').value = formula.book;
+            document.getElementById('editPage').value = formula.page;
+            document.getElementById('editRow').value = formula.row;
+            document.getElementById('editSwatchColor').value = formula.swatchColor;
+            editModal.classList.remove('hidden');
+        }
+
+        async function handleUpdateFormula() {
+            const id = document.getElementById('editFormulaId').value;
+            const updatedData = {
+                id,
+                book: document.getElementById('editBook').value,
+                page: parseInt(document.getElementById('editPage').value, 10),
+                row: parseInt(document.getElementById('editRow').value, 10),
+                swatchColor: document.getElementById('editSwatchColor').value
+            };
+            try {
+                const result = await window.electronAPI.updateFormula(updatedData);
+                if (!result.success) throw new Error(result.message);
+                editModal.classList.add('hidden');
+                showNotification('บันทึกข้อมูลสำเร็จ!');
+                await fetchFormulas();
+            } catch (error) {
+                console.error("Update failed:", error);
+                showNotification('การอัปเดตล้มเหลว: ' + error.message, false);
+            }
+        }
+
+        // --- Delete Modal Logic ---
+        function openDeleteModal(formula) {
+            document.getElementById('deleteFormulaId').value = formula.id;
+            deleteModal.classList.remove('hidden');
+        }
+
+        async function handleDeleteFormula() {
+            const id = document.getElementById('deleteFormulaId').value;
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            confirmBtn.disabled = true;
+
+            try {
+                const result = await window.electronAPI.deleteFormula(id);
+                if (!result.success) {
+                    throw new Error(result.message || 'Server error');
+                }
+                
+                deleteModal.classList.add('hidden');
+                showNotification('ลบข้อมูลสำเร็จ!');
+                await fetchFormulas();
+            } catch (error) {
+                console.error("Delete failed:", error);
+                showNotification(`การลบล้มเหลว: ${error.message}`, false);
+            } finally {
+                confirmBtn.disabled = false;
+            }
+        }
+
+        // --- Import View Logic ---
+        const importStatus = document.getElementById('importStatus');
+        const importButtonText = document.getElementById('importButtonText');
+        const importLoader = document.getElementById('importLoader');
+        const importSubmitBtn = document.getElementById('importSubmitBtn');
+        const dropZoneElement = document.getElementById("drop-zone");
+        const dropZonePrompt = document.getElementById("drop-zone-prompt");
+
+        async function handleFileSelect() {
+            const filePath = await window.electronAPI.openFileDialog();
+            if(filePath) {
+                 const fileName = filePath.split(/(\/|\\)/).pop();
+                 updateDropZone(fileName);
+                 selectedExcelFilePath = filePath;
+            }
+        }
+        
+        dropZoneElement.addEventListener("click", handleFileSelect);
+
+        function updateDropZone(fileName) {
+            dropZonePrompt.innerHTML = `<i class="fas fa-file-excel text-4xl text-green-500 mb-3"></i><p class="font-semibold">${fileName}</p>`;
+            importSubmitBtn.disabled = false;
+        }
+
+        importSubmitBtn.addEventListener('click', async () => {
+            if (!selectedExcelFilePath) { importStatus.innerHTML = '<p class="text-red-600">กรุณาเลือกไฟล์</p>'; return; }
+            importSubmitBtn.disabled = true;
+            importButtonText.classList.add('hidden');
+            importLoader.classList.remove('hidden');
+            importStatus.innerHTML = '<p class="text-blue-600">กำลังนำเข้าข้อมูล...</p>';
+            
+            try {
+                const result = await window.electronAPI.importExcel(selectedExcelFilePath);
+                if (result.success) {
+                    importStatus.innerHTML = `<p class="text-green-600">${result.message}</p>`;
+                    await fetchFormulas();
+                } else {
+                    let errorHtml = `<p class="text-red-600 font-bold">${result.message}</p>`;
+                    if (result.errors && result.errors.length > 0) { errorHtml += `<ul class="text-left text-sm text-red-500 mt-2 list-disc list-inside">${result.errors.map(e => `<li>${e}</li>`).join('')}</ul>`; }
+                    importStatus.innerHTML = errorHtml;
+                }
+            } catch (error) {
+                 importStatus.innerHTML = `<p class="text-red-600">นำเข้าไม่สำเร็จ: ${error.message}</p>`;
+            } finally {
+                importButtonText.classList.remove('hidden');
+                importLoader.classList.add('hidden');
+                importSubmitBtn.disabled = true;
+                selectedExcelFilePath = null;
+                 dropZonePrompt.innerHTML = `<i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i><p class="font-semibold">คลิกเพื่อเลือกไฟล์</p><p class="text-sm text-gray-500">ยังไม่ได้เลือกไฟล์</p>`;
+            }
+        });
+        
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            setActiveView('main');
+            fetchFormulas();
+            Object.values(mainInputs).forEach(input => input.addEventListener('input', filterMainDisplay));
+            document.getElementById('addCriterionBtn').addEventListener('click', addCriterionRow);
+            document.getElementById('formulaSearchBtn').addEventListener('click', handleFormulaSearch);
+            document.getElementById('cancelEditBtn').addEventListener('click', () => editModal.classList.add('hidden'));
+            document.getElementById('closeEditModalBtn').addEventListener('click', () => editModal.classList.add('hidden'));
+            document.getElementById('saveEditBtn').addEventListener('click', handleUpdateFormula);
+            document.getElementById('cancelDeleteBtn').addEventListener('click', () => deleteModal.classList.add('hidden'));
+            document.getElementById('closeDeleteModalBtn').addEventListener('click', () => deleteModal.classList.add('hidden'));
+            document.getElementById('confirmDeleteBtn').addEventListener('click', handleDeleteFormula);
+            navMainBtn.addEventListener('click', () => setActiveView('main'));
+            navFormulaBtn.addEventListener('click', () => setActiveView('formula'));
+            navImportBtn.addEventListener('click', () => setActiveView('import'));
+            document.getElementById('colorSearchBtn').addEventListener('click', handleColorSearch);
+            document.getElementById('downloadTemplateBtn').addEventListener('click', async () => {
+                const result = await window.electronAPI.downloadTemplate();
+                if (result.success) {
+                    showNotification('กำลังบันทึกไฟล์เทมเพลต...');
+                } else {
+                    showNotification('ยกเลิกการดาวน์โหลด', false);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,171 @@
+[
+    {
+        "id": "BN0173-PC16/2-DG-1663156900000",
+        "book": "DATA2025",
+        "resultCode": "BN0173",
+        "date": "11/06/2025",
+        "yarnType": "PC16/2",
+        "yarnModel": "DG",
+        "page": 1,
+        "row": 1,
+        "formula": [
+            {
+                "motherCode": "D01231",
+                "name": "DIANIX RED S-G01",
+                "percentage": 0.212
+            },
+            {
+                "motherCode": "D01121",
+                "name": "DIANIX YELLOW S-6G",
+                "percentage": 0.23
+            },
+            {
+                "motherCode": "D01210",
+                "name": "HELLOCRON BLACK NNR",
+                "percentage": 3
+            }
+        ],
+        "swatchColor": "#a56a42"
+    },
+    {
+        "id": "BN0174-50/3-FW-1663156900001",
+        "book": "DATA2025",
+        "resultCode": "BN0174",
+        "date": "01/08/2025",
+        "yarnType": "50/3",
+        "yarnModel": "FW",
+        "page": 1,
+        "row": 2,
+        "formula": [
+            {
+                "motherCode": "D01121",
+                "name": "DIANIX YELLOW S-6G",
+                "percentage": 0.218
+            },
+            {
+                "motherCode": "D01231",
+                "name": "DIANIX RED S-G01",
+                "percentage": 0.262
+            },
+            {
+                "motherCode": "D01210",
+                "name": "HELLOCRON BLACK NNR",
+                "percentage": 3.25
+            }
+        ],
+        "swatchColor": "#a65e69"
+    },
+    {
+        "id": "BN0174-30/3-FW-1663156900002",
+        "book": "DATA2025",
+        "resultCode": "BN0174",
+        "date": "01/08/2025",
+        "yarnType": "30/3",
+        "yarnModel": "FW",
+        "page": 1,
+        "row": 3,
+        "formula": [
+            {
+                "motherCode": "D01210",
+                "name": "HELLOCRON BLACK NNR",
+                "percentage": 3.25
+            },
+            {
+                "motherCode": "D01121",
+                "name": "DIANIX YELLOW S-6G",
+                "percentage": 0.218
+            },
+            {
+                "motherCode": "D01231",
+                "name": "DIANIX RED S-G01",
+                "percentage": 0.262
+            }
+        ],
+        "swatchColor": "#5f6a4d"
+    },
+    {
+        "id": "LC0172-JT150/1-RE-T-1663156900003",
+        "book": "DATA2025",
+        "resultCode": "LC0172",
+        "date": "15/05/2025",
+        "yarnType": "JT150/1-RE",
+        "yarnModel": "T",
+        "page": 1,
+        "row": 4,
+        "formula": [
+            {
+                "motherCode": "D01121",
+                "name": "DIANIX YELLOW S-6G",
+                "percentage": 0.0098
+            },
+            {
+                "motherCode": "D01231",
+                "name": "DIANIX RED S-G01",
+                "percentage": 0.0126
+            },
+            {
+                "motherCode": "D01128",
+                "name": "DIANIX BLUE S-BG",
+                "percentage": 0.006
+            }
+        ],
+        "swatchColor": "#8c8a88"
+    },
+    {
+        "id": "LC0172-40/2-RE-RI-1663156900004",
+        "book": "DATA2025",
+        "resultCode": "LC0172",
+        "date": "15/05/2025",
+        "yarnType": "40/2-RE",
+        "yarnModel": "RI",
+        "page": 1,
+        "row": 5,
+        "formula": [
+            {
+                "motherCode": "D01121",
+                "name": "DIANIX YELLOW S-6G",
+                "percentage": 0.0098
+            },
+            {
+                "motherCode": "D01231",
+                "name": "DIANIX RED S-G01",
+                "percentage": 0.0126
+            },
+            {
+                "motherCode": "D01128",
+                "name": "DIANIX BLUE S-BG",
+                "percentage": 0.006
+            }
+        ],
+        "swatchColor": "#8c8a88"
+    },
+    {
+        "id": "LC0174-60/2-FD-1663156900005",
+        "book": "DATA2025",
+        "resultCode": "LC0174",
+        "date": "22/05/2025",
+        "yarnType": "60/2",
+        "yarnModel": "FD",
+        "page": 1,
+        "row": 6,
+        "formula": [
+            {
+                "motherCode": "D01023",
+                "name": "DAINIX RED UN-SE",
+                "percentage": 0.0528
+            },
+            {
+                "motherCode": "D01198",
+                "name": "DIANIX YELLOW UN-SE200%-01",
+                "percentage": 0.0491
+            },
+            {
+                "motherCode": "D01027",
+                "name": "DIANIX BLUE UN-SE",
+                "percentage": 0.0468
+            }
+        ],
+        "swatchColor": "#9a9a9a"
+    }
+]
+
