@@ -7,5 +7,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     openFileDialog: () => ipcRenderer.invoke('open-file-dialog'),
     importExcel: (filePath) => ipcRenderer.invoke('import-excel', filePath),
     downloadTemplate: () => ipcRenderer.invoke('download-template'),
+    getAnalytics: () => ipcRenderer.invoke('get-analytics'),
 });
-

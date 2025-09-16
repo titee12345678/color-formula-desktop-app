@@ -57,6 +57,120 @@ function loadCacheFromDB() {
 }
 
 
+function parseFormulaDate(value) {
+    if (!value) return null;
+    if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? null : value;
+    }
+
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+
+        const match = trimmed.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+        if (match) {
+            let [, dd, mm, yyyy] = match;
+            let year = parseInt(yyyy, 10);
+            if (year < 100) {
+                year += year >= 70 ? 1900 : 2000;
+            }
+            const month = parseInt(mm, 10) - 1;
+            const day = parseInt(dd, 10);
+            const result = new Date(year, month, day);
+            return Number.isNaN(result.getTime()) ? null : result;
+        }
+
+        const fallback = new Date(trimmed);
+        return Number.isNaN(fallback.getTime()) ? null : fallback;
+    }
+
+    return null;
+}
+
+
+function buildAnalyticsSummary() {
+    const totalFormulas = formulaCache.length;
+    const bookCounts = new Map();
+    const yarnCounts = new Map();
+    const monthlyMap = new Map();
+    const ingredientCounts = new Map();
+    let latestDate = null;
+
+    const dateFormatter = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', year: 'numeric' });
+    const monthFormatter = new Intl.DateTimeFormat('th-TH', { month: 'short', year: 'numeric' });
+
+    for (const formula of formulaCache) {
+        if (formula.book) {
+            const key = formula.book;
+            bookCounts.set(key, (bookCounts.get(key) || 0) + 1);
+        }
+
+        if (formula.yarnType) {
+            const key = formula.yarnType;
+            yarnCounts.set(key, (yarnCounts.get(key) || 0) + 1);
+        }
+
+        if (Array.isArray(formula.formula)) {
+            for (const ingredient of formula.formula) {
+                if (!ingredient || !ingredient.motherCode) continue;
+                const code = ingredient.motherCode;
+                const entry = ingredientCounts.get(code) || { count: 0, name: ingredient.name || '' };
+                entry.count += 1;
+                if (ingredient.name && !entry.name) {
+                    entry.name = ingredient.name;
+                }
+                ingredientCounts.set(code, entry);
+            }
+        }
+
+        const parsedDate = parseFormulaDate(formula.date);
+        if (parsedDate) {
+            const monthKey = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}`;
+            monthlyMap.set(monthKey, (monthlyMap.get(monthKey) || 0) + 1);
+
+            if (!latestDate || parsedDate > latestDate) {
+                latestDate = parsedDate;
+            }
+        }
+    }
+
+    const aggregateToArray = (map) => Array.from(map.entries())
+        .map(([label, count]) => ({ label, count }))
+        .sort((a, b) => b.count - a.count);
+
+    const formulasByBook = aggregateToArray(bookCounts);
+    const formulasByYarnType = aggregateToArray(yarnCounts);
+
+    const monthlyTrend = Array.from(monthlyMap.entries())
+        .map(([key, count]) => {
+            const [yearStr, monthStr] = key.split('-');
+            const year = parseInt(yearStr, 10);
+            const month = parseInt(monthStr, 10) - 1;
+            const label = monthFormatter.format(new Date(year, month, 1));
+            return { label, count, sortKey: key };
+        })
+        .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
+        .slice(-12)
+        .map(({ label, count }) => ({ label, count }));
+
+    const topMotherCodes = Array.from(ingredientCounts.entries())
+        .map(([motherCode, { count, name }]) => ({ motherCode, name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+    return {
+        totalFormulas,
+        totalBooks: bookCounts.size,
+        totalYarnTypes: yarnCounts.size,
+        latestFormulaDate: latestDate ? dateFormatter.format(latestDate) : null,
+        formulasByBook,
+        formulasByYarnType,
+        monthlyTrend,
+        topMotherCodes,
+    };
+}
+
+
 /**
  * Initializes the database, creates tables if they don't exist,
  * and migrates data from db.json if necessary.
@@ -120,9 +234,26 @@ async function transformAndValidateExcelData(filePath) {
     const groupedFormulas = new Map();
     const errors = [];
     
-    let lastFormula = formulaCache.length > 0 ? formulaCache[formulaCache.length - 1] : { page: 0, row: 0 };
-    let currentPage = lastFormula.page || 1;
-    let currentRow = lastFormula.row || 0;
+    const pages = formulaCache
+        .map(f => Number(f.page))
+        .filter(page => Number.isFinite(page) && page > 0);
+
+    let currentPage = pages.length > 0 ? Math.max(...pages) : 1;
+
+    const rowsOnCurrentPage = formulaCache
+        .filter(f => Number(f.page) === currentPage)
+        .map(f => Number(f.row))
+        .filter(row => Number.isFinite(row) && row >= 0);
+
+    let currentRow = rowsOnCurrentPage.length > 0 ? Math.max(...rowsOnCurrentPage) : 0;
+
+    if (!Number.isFinite(currentPage) || currentPage < 1) {
+        currentPage = 1;
+    }
+
+    if (!Number.isFinite(currentRow) || currentRow < 0) {
+        currentRow = 0;
+    }
     
     for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
@@ -214,13 +345,20 @@ app.whenReady().then(() => {
       if (!updatedFormula || !updatedFormula.id) return { success: false, message: 'Invalid data' };
       
       try {
+          const page = Number(updatedFormula.page);
+          const row = Number(updatedFormula.row);
+
+          if (!Number.isFinite(page) || !Number.isFinite(row)) {
+              return { success: false, message: 'page หรือ row ต้องเป็นตัวเลข' };
+          }
+
           const stmt = db.prepare('UPDATE formulas SET book = ?, page = ?, row = ?, swatchColor = ? WHERE id = ?');
-          stmt.run(updatedFormula.book, updatedFormula.page, updatedFormula.row, updatedFormula.swatchColor, updatedFormula.id);
+          stmt.run(updatedFormula.book, page, row, updatedFormula.swatchColor, updatedFormula.id);
 
           // Update cache
           const index = formulaCache.findIndex(f => f.id === updatedFormula.id);
           if (index !== -1) {
-              formulaCache[index] = { ...formulaCache[index], ...updatedFormula };
+              formulaCache[index] = { ...formulaCache[index], ...updatedFormula, page, row };
           }
           return { success: true };
       } catch (error) {
@@ -292,6 +430,15 @@ app.whenReady().then(() => {
       }
   });
 
+  ipcMain.handle('get-analytics', () => {
+      try {
+          return { success: true, data: buildAnalyticsSummary() };
+      } catch (error) {
+          console.error('Analytics failed:', error);
+          return { success: false, message: 'ไม่สามารถสร้างสรุปข้อมูลได้' };
+      }
+  });
+
   ipcMain.handle('download-template', async () => {
       const { canceled, filePath } = await dialog.showSaveDialog({
           title: 'บันทึกไฟล์เทมเพลต',
@@ -330,4 +477,3 @@ app.on('window-all-closed', () => {
   db.close(); // Gracefully close the database connection
   if (process.platform !== 'darwin') app.quit();
 });
-

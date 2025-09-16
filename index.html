@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: 'Sarabun', sans-serif; }
         .formula-card { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
@@ -28,6 +29,9 @@
             display: flex; align-items: center; justify-content: center;
             z-index: 1000;
         }
+        .analytics-chart-wrapper { height: 16rem; position: relative; }
+        .analytics-chart-wrapper.tall { height: 18rem; }
+        canvas.analytics-chart { width: 100% !important; height: 100% !important; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -38,6 +42,7 @@
                 <div class="flex space-x-2 md:space-x-4 bg-gray-200 p-1 rounded-lg">
                     <button id="navMainBtn" class="nav-btn px-4 py-2 text-sm md:text-base font-semibold text-gray-700 rounded-md transition">ค้นหาสูตร</button>
                     <button id="navFormulaBtn" class="nav-btn px-4 py-2 text-sm md:text-base font-semibold text-gray-700 rounded-md transition">ค้นหาจากแม่สี</button>
+                    <button id="navAnalyticsBtn" class="nav-btn px-4 py-2 text-sm md:text-base font-semibold text-gray-700 rounded-md transition">สรุปข้อมูล</button>
                     <button id="navImportBtn" class="nav-btn px-4 py-2 text-sm md:text-base font-semibold text-gray-700 rounded-md transition">Import Excel</button>
                 </div>
             </div>
@@ -113,6 +118,83 @@
         </div>
     </div>
     
+    <!-- Analytics View -->
+    <div id="analytics-view" class="hidden">
+        <div class="container mx-auto p-4 md:p-8">
+            <header class="text-center mb-8">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-700">แดชบอร์ดสรุปข้อมูล</h1>
+                <p class="text-gray-500 mt-2">ดูภาพรวมของสูตรสีที่มีอยู่ในระบบ</p>
+            </header>
+            <div class="bg-white p-6 md:p-8 rounded-xl shadow-md">
+                <div id="analyticsLoading" class="py-16 flex flex-col items-center space-y-4 hidden">
+                    <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-16 w-16"></div>
+                    <p class="text-gray-500">กำลังโหลดข้อมูล...</p>
+                </div>
+                <div id="analyticsError" class="hidden text-red-600 text-center font-semibold py-6"></div>
+                <div id="analyticsContent" class="space-y-8 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                        <div class="bg-slate-50 border border-gray-100 rounded-lg p-5">
+                            <p class="text-sm text-gray-500">จำนวนสูตรทั้งหมด</p>
+                            <p id="analyticsTotalFormulas" class="text-3xl font-bold text-gray-800 mt-2">0</p>
+                        </div>
+                        <div class="bg-slate-50 border border-gray-100 rounded-lg p-5">
+                            <p class="text-sm text-gray-500">เล่มที่ไม่ซ้ำ</p>
+                            <p id="analyticsTotalBooks" class="text-3xl font-bold text-gray-800 mt-2">0</p>
+                        </div>
+                        <div class="bg-slate-50 border border-gray-100 rounded-lg p-5">
+                            <p class="text-sm text-gray-500">ชนิดด้ายที่ไม่ซ้ำ</p>
+                            <p id="analyticsTotalYarnTypes" class="text-3xl font-bold text-gray-800 mt-2">0</p>
+                        </div>
+                        <div class="bg-slate-50 border border-gray-100 rounded-lg p-5">
+                            <p class="text-sm text-gray-500">อัปเดตล่าสุด</p>
+                            <p id="analyticsLatestDate" class="text-2xl font-semibold text-gray-800 mt-2">-</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <div class="bg-gray-50 rounded-lg p-6 shadow-inner">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-semibold text-gray-700">จำนวนสูตรตามเล่ม</h3>
+                                <span class="text-xs text-gray-400">สูงสุด 10 อันดับแรก</span>
+                            </div>
+                            <div class="analytics-chart-wrapper mt-4">
+                                <canvas id="analyticsBookChart" class="analytics-chart"></canvas>
+                            </div>
+                            <p id="analyticsBookEmpty" class="hidden text-center text-gray-500 mt-6">ยังไม่มีข้อมูลเพียงพอ</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-6 shadow-inner">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-semibold text-gray-700">สัดส่วนสูตรตามชนิดด้าย</h3>
+                                <span class="text-xs text-gray-400">สูงสุด 8 อันดับแรก</span>
+                            </div>
+                            <div class="analytics-chart-wrapper mt-4">
+                                <canvas id="analyticsYarnChart" class="analytics-chart"></canvas>
+                            </div>
+                            <p id="analyticsYarnEmpty" class="hidden text-center text-gray-500 mt-6">ยังไม่มีข้อมูลเพียงพอ</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                        <div class="bg-gray-50 rounded-lg p-6 shadow-inner xl:col-span-2">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-semibold text-gray-700">แนวโน้มจำนวนสูตรตามเดือน</h3>
+                                <span class="text-xs text-gray-400">ย้อนหลัง 12 เดือน</span>
+                            </div>
+                            <div class="analytics-chart-wrapper tall mt-4">
+                                <canvas id="analyticsMonthlyChart" class="analytics-chart"></canvas>
+                            </div>
+                            <p id="analyticsMonthlyEmpty" class="hidden text-center text-gray-500 mt-6">ยังไม่มีข้อมูลเพียงพอ</p>
+                        </div>
+                        <div class="bg-gray-50 rounded-lg p-6 shadow-inner">
+                            <h3 class="text-lg font-semibold text-gray-700">แม่สีที่พบบ่อยที่สุด</h3>
+                            <ul id="analyticsTopIngredients" class="mt-4 space-y-3 text-sm text-gray-700"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Import View -->
     <div id="import-view" class="hidden">
         <div class="container mx-auto p-4 md:p-8">
@@ -212,10 +294,14 @@
         let mainCurrentPage = 1, mainFilteredResults = [];
         let formulaCurrentPage = 1, formulaFilteredResults = [];
         let selectedExcelFilePath = null;
+        let analyticsData = null;
+        const analyticsCharts = {};
+        let activeView = 'main';
         
         // --- UI ELEMENTS ---
         const mainView = document.getElementById('main-view');
         const formulaSearchView = document.getElementById('formula-search-view');
+        const analyticsView = document.getElementById('analytics-view');
         const importView = document.getElementById('import-view');
         const editModal = document.getElementById('editModal');
         const deleteModal = document.getElementById('deleteModal');
@@ -223,8 +309,26 @@
         const notificationMessage = document.getElementById('notificationMessage');
         const navMainBtn = document.getElementById('navMainBtn');
         const navFormulaBtn = document.getElementById('navFormulaBtn');
+        const navAnalyticsBtn = document.getElementById('navAnalyticsBtn');
         const navImportBtn = document.getElementById('navImportBtn');
         const mainInputs = { book: document.getElementById('bookSearch'), resultCode: document.getElementById('resultCodeSearch'), yarnType: document.getElementById('yarnTypeSearch'), yarnModel: document.getElementById('yarnModelSearch'), page: document.getElementById('pageFilter') };
+        const analyticsLoading = document.getElementById('analyticsLoading');
+        const analyticsError = document.getElementById('analyticsError');
+        const analyticsContent = document.getElementById('analyticsContent');
+        const analyticsTotalFormulas = document.getElementById('analyticsTotalFormulas');
+        const analyticsTotalBooks = document.getElementById('analyticsTotalBooks');
+        const analyticsTotalYarnTypes = document.getElementById('analyticsTotalYarnTypes');
+        const analyticsLatestDate = document.getElementById('analyticsLatestDate');
+        const analyticsTopIngredients = document.getElementById('analyticsTopIngredients');
+        const analyticsBookChartEl = document.getElementById('analyticsBookChart');
+        const analyticsYarnChartEl = document.getElementById('analyticsYarnChart');
+        const analyticsMonthlyChartEl = document.getElementById('analyticsMonthlyChart');
+        const analyticsBookWrapper = analyticsBookChartEl?.parentElement;
+        const analyticsYarnWrapper = analyticsYarnChartEl?.parentElement;
+        const analyticsMonthlyWrapper = analyticsMonthlyChartEl?.parentElement;
+        const analyticsBookEmpty = document.getElementById('analyticsBookEmpty');
+        const analyticsYarnEmpty = document.getElementById('analyticsYarnEmpty');
+        const analyticsMonthlyEmpty = document.getElementById('analyticsMonthlyEmpty');
         const mainResultsGrid = document.getElementById('mainResultsGrid');
         const mainResultsCount = document.getElementById('mainResultsCount');
         const mainNoResults = document.getElementById('mainNoResults');
@@ -241,11 +345,214 @@
                 mainResultsGrid.innerHTML = '<div class="col-span-full text-center p-8"><div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32 mx-auto"></div><p class="mt-4">กำลังโหลดข้อมูล...</p></div>';
                 allColorFormulas = await window.electronAPI.getFormulas();
                 filterMainDisplay(); 
+                analyticsData = null;
+                if (activeView === 'analytics') {
+                    renderAnalytics(true);
+                }
             } catch (error) {
                 console.error("Could not fetch formulas:", error);
                 mainResultsGrid.innerHTML = `<p class="text-red-500 text-center col-span-full">เกิดข้อผิดพลาดในการโหลดข้อมูล</p>`;
             }
         }
+
+        const chartPalette = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#64748B', '#84CC16', '#0EA5E9'];
+
+        function getColorPalette(length) {
+            return Array.from({ length }, (_, index) => chartPalette[index % chartPalette.length]);
+        }
+
+        function destroyChart(chartKey) {
+            const chart = analyticsCharts[chartKey];
+            if (chart) {
+                chart.destroy();
+                delete analyticsCharts[chartKey];
+            }
+        }
+
+        function updateChart(chartKey, canvasEl, config) {
+            if (!canvasEl || typeof Chart === 'undefined') return;
+            const existingChart = analyticsCharts[chartKey];
+
+            if (existingChart) {
+                existingChart.options = config.options;
+                existingChart.config.type = config.type;
+                existingChart.data = config.data;
+                existingChart.update('none');
+                existingChart.resize();
+                return;
+            }
+
+            canvasEl.style.height = '';
+            canvasEl.style.width = '';
+            canvasEl.removeAttribute('height');
+            canvasEl.removeAttribute('width');
+            analyticsCharts[chartKey] = new Chart(canvasEl.getContext('2d'), config);
+        }
+
+        function updateAnalyticsUI(rawData) {
+            const data = rawData || {};
+            const asNumber = (value) => (typeof value === 'number' && !Number.isNaN(value) ? value : 0);
+
+            analyticsTotalFormulas.textContent = asNumber(data.totalFormulas).toLocaleString('th-TH');
+            analyticsTotalBooks.textContent = asNumber(data.totalBooks).toLocaleString('th-TH');
+            analyticsTotalYarnTypes.textContent = asNumber(data.totalYarnTypes).toLocaleString('th-TH');
+            analyticsLatestDate.textContent = data.latestFormulaDate || 'ยังไม่มีข้อมูล';
+
+            const ingredients = Array.isArray(data.topMotherCodes) ? data.topMotherCodes : [];
+            if (ingredients.length === 0) {
+                analyticsTopIngredients.innerHTML = '<li class="text-gray-500">ยังไม่มีข้อมูลสำหรับคำนวณ</li>';
+            } else {
+                analyticsTopIngredients.innerHTML = ingredients.map((item, index) => {
+                    const nameLine = item.name ? `<p class="text-xs text-gray-500">${item.name}</p>` : '';
+                    const countText = item.count != null ? item.count.toLocaleString('th-TH') : '0';
+                    return `<li class="flex justify-between items-start bg-white/70 rounded-md px-3 py-2"><div><p class="font-semibold text-gray-800">${index + 1}. ${item.motherCode}</p>${nameLine}</div><span class="text-sm font-medium text-gray-600">${countText} สูตร</span></li>`;
+                }).join('');
+            }
+
+            const books = Array.isArray(data.formulasByBook) ? data.formulasByBook.slice(0, 10) : [];
+            if (books.length > 0 && analyticsBookChartEl) {
+                if (analyticsBookWrapper) analyticsBookWrapper.classList.remove('hidden');
+                analyticsBookChartEl.classList.remove('hidden');
+                analyticsBookEmpty.classList.add('hidden');
+                updateChart('books', analyticsBookChartEl, {
+                    type: 'bar',
+                    data: {
+                        labels: books.map(item => item.label),
+                        datasets: [{
+                            label: 'จำนวนสูตร',
+                            data: books.map(item => item.count),
+                            backgroundColor: getColorPalette(books.length),
+                            borderRadius: 6,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0 }
+                            }
+                        }
+                    }
+                });
+            } else {
+                destroyChart('books');
+                if (analyticsBookWrapper) analyticsBookWrapper.classList.add('hidden');
+                if (analyticsBookChartEl) analyticsBookChartEl.classList.add('hidden');
+                if (analyticsBookEmpty) analyticsBookEmpty.classList.remove('hidden');
+            }
+
+            const yarns = Array.isArray(data.formulasByYarnType) ? data.formulasByYarnType.slice(0, 8) : [];
+            if (yarns.length > 0 && analyticsYarnChartEl) {
+                if (analyticsYarnWrapper) analyticsYarnWrapper.classList.remove('hidden');
+                analyticsYarnChartEl.classList.remove('hidden');
+                analyticsYarnEmpty.classList.add('hidden');
+                updateChart('yarns', analyticsYarnChartEl, {
+                    type: 'doughnut',
+                    data: {
+                        labels: yarns.map(item => item.label),
+                        datasets: [{
+                            label: 'จำนวนสูตร',
+                            data: yarns.map(item => item.count),
+                            backgroundColor: getColorPalette(yarns.length),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: { boxWidth: 12 }
+                            }
+                        }
+                    }
+                });
+            } else {
+                destroyChart('yarns');
+                if (analyticsYarnWrapper) analyticsYarnWrapper.classList.add('hidden');
+                if (analyticsYarnChartEl) analyticsYarnChartEl.classList.add('hidden');
+                if (analyticsYarnEmpty) analyticsYarnEmpty.classList.remove('hidden');
+            }
+
+            const monthly = Array.isArray(data.monthlyTrend) ? data.monthlyTrend : [];
+            if (monthly.length > 0 && analyticsMonthlyChartEl) {
+                if (analyticsMonthlyWrapper) analyticsMonthlyWrapper.classList.remove('hidden');
+                analyticsMonthlyChartEl.classList.remove('hidden');
+                analyticsMonthlyEmpty.classList.add('hidden');
+                updateChart('monthly', analyticsMonthlyChartEl, {
+                    type: 'line',
+                    data: {
+                        labels: monthly.map(item => item.label),
+                        datasets: [{
+                            label: 'จำนวนสูตร',
+                            data: monthly.map(item => item.count),
+                            borderColor: '#6366F1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                            pointBackgroundColor: '#4338CA',
+                            tension: 0.35,
+                            fill: true,
+                            pointRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0 }
+                            }
+                        }
+                    }
+                });
+            } else {
+                destroyChart('monthly');
+                if (analyticsMonthlyWrapper) analyticsMonthlyWrapper.classList.add('hidden');
+                if (analyticsMonthlyChartEl) analyticsMonthlyChartEl.classList.add('hidden');
+                if (analyticsMonthlyEmpty) analyticsMonthlyEmpty.classList.remove('hidden');
+            }
+        }
+
+        async function renderAnalytics(forceReload = false) {
+            if (!analyticsView) return;
+
+            analyticsError.classList.add('hidden');
+            analyticsError.textContent = '';
+            if (analyticsLoading) analyticsLoading.classList.remove('hidden');
+            analyticsContent.classList.add('hidden');
+
+            if (typeof Chart === 'undefined') {
+                if (analyticsLoading) analyticsLoading.classList.add('hidden');
+                analyticsError.textContent = 'ไม่สามารถโหลดไลบรารีแสดงผลกราฟได้';
+                analyticsError.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                if (forceReload || !analyticsData) {
+                    const response = await window.electronAPI.getAnalytics();
+                    if (!response || response.success === false) {
+                        throw new Error(response?.message || 'ไม่สามารถโหลดข้อมูลได้');
+                    }
+                    analyticsData = response.data || null;
+                }
+
+                updateAnalyticsUI(analyticsData);
+                if (analyticsLoading) analyticsLoading.classList.add('hidden');
+                analyticsContent.classList.remove('hidden');
+            } catch (error) {
+                if (analyticsLoading) analyticsLoading.classList.add('hidden');
+                analyticsContent.classList.add('hidden');
+                analyticsError.textContent = error.message || 'ไม่สามารถโหลดข้อมูลได้';
+                analyticsError.classList.remove('hidden');
+            }
+        }
+
 
         // --- DISPLAY LOGIC ---
         function displayResults(items, gridEl, countEl, noResultsEl, paginationEl, currentPage, viewType) {
@@ -424,13 +731,16 @@
         }
 
         function setActiveView(viewName) {
-            const views = { main: mainView, formula: formulaSearchView, import: importView };
-            const buttons = { main: navMainBtn, formula: navFormulaBtn, import: navImportBtn };
+            activeView = viewName;
+            const views = { main: mainView, formula: formulaSearchView, analytics: analyticsView, import: importView };
+            const buttons = { main: navMainBtn, formula: navFormulaBtn, analytics: navAnalyticsBtn, import: navImportBtn };
             Object.entries(views).forEach(([key, view]) => {
-                view.classList.toggle('hidden', key !== viewName);
-                buttons[key].classList.toggle('active', key === viewName);
+                if (view) view.classList.toggle('hidden', key !== viewName);
+                const button = buttons[key];
+                if (button) button.classList.toggle('active', key === viewName);
             });
             if (viewName === 'formula' && criteriaContainer.children.length === 0) addCriterionRow();
+            if (viewName === 'analytics') renderAnalytics();
         }
 
         function showNotification(message, isSuccess = true) {
@@ -599,6 +909,7 @@
             document.getElementById('confirmDeleteBtn').addEventListener('click', handleDeleteFormula);
             navMainBtn.addEventListener('click', () => setActiveView('main'));
             navFormulaBtn.addEventListener('click', () => setActiveView('formula'));
+            navAnalyticsBtn.addEventListener('click', () => setActiveView('analytics'));
             navImportBtn.addEventListener('click', () => setActiveView('import'));
             document.getElementById('colorSearchBtn').addEventListener('click', handleColorSearch);
             document.getElementById('downloadTemplateBtn').addEventListener('click', async () => {
@@ -613,4 +924,3 @@
     </script>
 </body>
 </html>
-

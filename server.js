@@ -63,10 +63,24 @@ async function transformAndValidateExcelData(filePath) {
 
     // Assign initial page and row from the existing DB to avoid overlap
     const existingFormulas = readDB();
-    let currentPage = Math.max(0, ...existingFormulas.map(f => f.page));
-    let currentRow = Math.max(0, ...existingFormulas.filter(f => f.page === currentPage).map(f => f.row));
-     if (isNaN(currentPage) || isNaN(currentRow) || currentPage === 0) {
+    const pages = existingFormulas
+        .map(f => Number(f.page))
+        .filter(page => Number.isFinite(page) && page > 0);
+
+    let currentPage = pages.length > 0 ? Math.max(...pages) : 1;
+
+    const rowsOnCurrentPage = existingFormulas
+        .filter(f => Number(f.page) === currentPage)
+        .map(f => Number(f.row))
+        .filter(row => Number.isFinite(row) && row >= 0);
+
+    let currentRow = rowsOnCurrentPage.length > 0 ? Math.max(...rowsOnCurrentPage) : 0;
+
+    if (!Number.isFinite(currentPage) || currentPage < 1) {
         currentPage = 1;
+    }
+
+    if (!Number.isFinite(currentRow) || currentRow < 0) {
         currentRow = 0;
     }
 
@@ -156,10 +170,17 @@ app.put('/api/formulas', (req, res) => {
             return res.status(404).json({ success: false, message: 'Formula not found.' });
         }
 
+        const page = Number(updatedFormula.page);
+        const row = Number(updatedFormula.row);
+
+        if (!Number.isFinite(page) || !Number.isFinite(row)) {
+            return res.status(400).json({ success: false, message: 'page หรือ row ต้องเป็นตัวเลข' });
+        }
+
         // Update only the allowed fields
         formulas[formulaIndex].book = updatedFormula.book;
-        formulas[formulaIndex].page = updatedFormula.page;
-        formulas[formulaIndex].row = updatedFormula.row;
+        formulas[formulaIndex].page = page;
+        formulas[formulaIndex].row = row;
         formulas[formulaIndex].swatchColor = updatedFormula.swatchColor;
 
         writeDB(formulas);
