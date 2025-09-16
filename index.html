@@ -132,7 +132,7 @@
                 </div>
                 <div id="analyticsError" class="hidden text-red-600 text-center font-semibold py-6"></div>
                 <div id="analyticsContent" class="space-y-8 hidden">
-                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         <div class="bg-slate-50 border border-gray-100 rounded-lg p-5">
                             <p class="text-sm text-gray-500">จำนวนสูตรทั้งหมด</p>
                             <p id="analyticsTotalFormulas" class="text-3xl font-bold text-gray-800 mt-2">0</p>
@@ -140,10 +140,6 @@
                         <div class="bg-slate-50 border border-gray-100 rounded-lg p-5">
                             <p class="text-sm text-gray-500">เล่มที่ไม่ซ้ำ</p>
                             <p id="analyticsTotalBooks" class="text-3xl font-bold text-gray-800 mt-2">0</p>
-                        </div>
-                        <div class="bg-slate-50 border border-gray-100 rounded-lg p-5">
-                            <p class="text-sm text-gray-500">ชนิดด้ายที่ไม่ซ้ำ</p>
-                            <p id="analyticsTotalYarnTypes" class="text-3xl font-bold text-gray-800 mt-2">0</p>
                         </div>
                         <div class="bg-slate-50 border border-gray-100 rounded-lg p-5">
                             <p class="text-sm text-gray-500">อัปเดตล่าสุด</p>
@@ -176,9 +172,17 @@
 
                     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
                         <div class="bg-gray-50 rounded-lg p-6 shadow-inner xl:col-span-2">
-                            <div class="flex justify-between items-center">
-                                <h3 class="text-lg font-semibold text-gray-700">แนวโน้มจำนวนสูตรตามเดือน</h3>
-                                <span class="text-xs text-gray-400">ย้อนหลัง 12 เดือน</span>
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-700">แนวโน้มจำนวนสูตรตามเดือน</h3>
+                                    <p class="text-xs text-gray-400">เลือกปีเพื่อดูข้อมูลเดือน มกราคม - ธันวาคม</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label for="analyticsYearSelect" class="text-sm text-gray-600">ปี:</label>
+                                    <select id="analyticsYearSelect" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" disabled>
+                                        <option value="">ไม่มีข้อมูล</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="analytics-chart-wrapper tall mt-4">
                                 <canvas id="analyticsMonthlyChart" class="analytics-chart"></canvas>
@@ -296,6 +300,8 @@
         let selectedExcelFilePath = null;
         let analyticsData = null;
         const analyticsCharts = {};
+        let analyticsMonthlyData = null;
+        let selectedAnalyticsYear = null;
         let activeView = 'main';
         
         // --- UI ELEMENTS ---
@@ -317,12 +323,12 @@
         const analyticsContent = document.getElementById('analyticsContent');
         const analyticsTotalFormulas = document.getElementById('analyticsTotalFormulas');
         const analyticsTotalBooks = document.getElementById('analyticsTotalBooks');
-        const analyticsTotalYarnTypes = document.getElementById('analyticsTotalYarnTypes');
         const analyticsLatestDate = document.getElementById('analyticsLatestDate');
         const analyticsTopIngredients = document.getElementById('analyticsTopIngredients');
         const analyticsBookChartEl = document.getElementById('analyticsBookChart');
         const analyticsYarnChartEl = document.getElementById('analyticsYarnChart');
         const analyticsMonthlyChartEl = document.getElementById('analyticsMonthlyChart');
+        const analyticsYearSelect = document.getElementById('analyticsYearSelect');
         const analyticsBookWrapper = analyticsBookChartEl?.parentElement;
         const analyticsYarnWrapper = analyticsYarnChartEl?.parentElement;
         const analyticsMonthlyWrapper = analyticsMonthlyChartEl?.parentElement;
@@ -356,6 +362,7 @@
         }
 
         const chartPalette = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#64748B', '#84CC16', '#0EA5E9'];
+        const monthDisplayLabels = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
         function getColorPalette(length) {
             return Array.from({ length }, (_, index) => chartPalette[index % chartPalette.length]);
@@ -389,13 +396,93 @@
             analyticsCharts[chartKey] = new Chart(canvasEl.getContext('2d'), config);
         }
 
+        function syncYearOptions(years) {
+            if (!analyticsYearSelect) return;
+            const yearValues = years.map(year => String(year));
+            const currentOptions = Array.from(analyticsYearSelect.options).map(option => option.value);
+            const sameOptions = yearValues.length === currentOptions.length && yearValues.every((value, index) => value === currentOptions[index]);
+
+            if (yearValues.length === 0) {
+                analyticsYearSelect.innerHTML = '<option value="">ไม่มีข้อมูล</option>';
+                analyticsYearSelect.disabled = true;
+                selectedAnalyticsYear = null;
+                analyticsYearSelect.value = '';
+                return;
+            }
+
+            if (!sameOptions) {
+                analyticsYearSelect.innerHTML = yearValues.map(year => `<option value="${year}">${year}</option>`).join('');
+            }
+
+            analyticsYearSelect.disabled = false;
+            if (!yearValues.includes(String(selectedAnalyticsYear))) {
+                selectedAnalyticsYear = yearValues[0];
+            }
+            analyticsYearSelect.value = String(selectedAnalyticsYear);
+        }
+
+        function refreshMonthlyChart() {
+            if (!analyticsMonthlyChartEl) return;
+
+            if (!analyticsMonthlyData || !Array.isArray(analyticsMonthlyData.years) || analyticsMonthlyData.years.length === 0) {
+                destroyChart('monthly');
+                if (analyticsMonthlyWrapper) analyticsMonthlyWrapper.classList.add('hidden');
+                analyticsMonthlyChartEl.classList.add('hidden');
+                if (analyticsMonthlyEmpty) analyticsMonthlyEmpty.classList.remove('hidden');
+                return;
+            }
+
+            const availableYears = analyticsMonthlyData.years.map(year => String(year));
+            if (!selectedAnalyticsYear || !availableYears.includes(String(selectedAnalyticsYear))) {
+                selectedAnalyticsYear = availableYears[0];
+            }
+
+            const chosenYear = String(selectedAnalyticsYear);
+            if (analyticsYearSelect) {
+                analyticsYearSelect.value = chosenYear;
+            }
+
+            const months = analyticsMonthlyData.data?.[chosenYear] || monthDisplayLabels.map(label => ({ label, count: 0 }));
+
+            if (analyticsMonthlyWrapper) analyticsMonthlyWrapper.classList.remove('hidden');
+            analyticsMonthlyChartEl.classList.remove('hidden');
+            if (analyticsMonthlyEmpty) analyticsMonthlyEmpty.classList.add('hidden');
+
+            updateChart('monthly', analyticsMonthlyChartEl, {
+                type: 'line',
+                data: {
+                    labels: months.map(item => item.label),
+                    datasets: [{
+                        label: 'จำนวนสูตร',
+                        data: months.map(item => item.count),
+                        borderColor: '#6366F1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                        pointBackgroundColor: '#4338CA',
+                        tension: 0.35,
+                        fill: true,
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+        }
+
         function updateAnalyticsUI(rawData) {
             const data = rawData || {};
             const asNumber = (value) => (typeof value === 'number' && !Number.isNaN(value) ? value : 0);
 
             analyticsTotalFormulas.textContent = asNumber(data.totalFormulas).toLocaleString('th-TH');
             analyticsTotalBooks.textContent = asNumber(data.totalBooks).toLocaleString('th-TH');
-            analyticsTotalYarnTypes.textContent = asNumber(data.totalYarnTypes).toLocaleString('th-TH');
             analyticsLatestDate.textContent = data.latestFormulaDate || 'ยังไม่มีข้อมูล';
 
             const ingredients = Array.isArray(data.topMotherCodes) ? data.topMotherCodes : [];
@@ -478,39 +565,22 @@
                 if (analyticsYarnEmpty) analyticsYarnEmpty.classList.remove('hidden');
             }
 
-            const monthly = Array.isArray(data.monthlyTrend) ? data.monthlyTrend : [];
-            if (monthly.length > 0 && analyticsMonthlyChartEl) {
-                if (analyticsMonthlyWrapper) analyticsMonthlyWrapper.classList.remove('hidden');
-                analyticsMonthlyChartEl.classList.remove('hidden');
-                analyticsMonthlyEmpty.classList.add('hidden');
-                updateChart('monthly', analyticsMonthlyChartEl, {
-                    type: 'line',
-                    data: {
-                        labels: monthly.map(item => item.label),
-                        datasets: [{
-                            label: 'จำนวนสูตร',
-                            data: monthly.map(item => item.count),
-                            borderColor: '#6366F1',
-                            backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                            pointBackgroundColor: '#4338CA',
-                            tension: 0.35,
-                            fill: true,
-                            pointRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: { precision: 0 }
-                            }
-                        }
-                    }
-                });
+            const monthly = data.monthlyTrend;
+            if (monthly && Array.isArray(monthly.years) && monthly.years.length > 0) {
+                const years = monthly.years.map(year => String(year));
+                analyticsMonthlyData = {
+                    years,
+                    data: monthly.data || {}
+                };
+                if (!selectedAnalyticsYear || !years.includes(String(selectedAnalyticsYear))) {
+                    selectedAnalyticsYear = years[0];
+                }
+                syncYearOptions(years);
+                refreshMonthlyChart();
             } else {
+                analyticsMonthlyData = null;
+                selectedAnalyticsYear = null;
+                syncYearOptions([]);
                 destroyChart('monthly');
                 if (analyticsMonthlyWrapper) analyticsMonthlyWrapper.classList.add('hidden');
                 if (analyticsMonthlyChartEl) analyticsMonthlyChartEl.classList.add('hidden');
@@ -911,6 +981,12 @@
             navFormulaBtn.addEventListener('click', () => setActiveView('formula'));
             navAnalyticsBtn.addEventListener('click', () => setActiveView('analytics'));
             navImportBtn.addEventListener('click', () => setActiveView('import'));
+            if (analyticsYearSelect) {
+                analyticsYearSelect.addEventListener('change', () => {
+                    selectedAnalyticsYear = analyticsYearSelect.value || null;
+                    refreshMonthlyChart();
+                });
+            }
             document.getElementById('colorSearchBtn').addEventListener('click', handleColorSearch);
             document.getElementById('downloadTemplateBtn').addEventListener('click', async () => {
                 const result = await window.electronAPI.downloadTemplate();

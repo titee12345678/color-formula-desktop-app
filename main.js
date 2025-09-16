@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const readXlsxFile = require('read-excel-file/node');
@@ -6,6 +6,8 @@ const ExcelJS = require('exceljs');
 const Database = require('better-sqlite3');
 
 const DB_PATH = path.join(app.getPath('userData'), 'database.sqlite');
+const ICON_PATH = path.join(__dirname, 'image', 'icon.png');
+const appIcon = nativeImage.createFromPath(ICON_PATH);
 const db = new Database(DB_PATH);
 
 // In-memory cache for fast read operations
@@ -92,12 +94,12 @@ function buildAnalyticsSummary() {
     const totalFormulas = formulaCache.length;
     const bookCounts = new Map();
     const yarnCounts = new Map();
-    const monthlyMap = new Map();
+    const yearMonthMap = new Map();
     const ingredientCounts = new Map();
     let latestDate = null;
 
     const dateFormatter = new Intl.DateTimeFormat('th-TH', { day: '2-digit', month: 'short', year: 'numeric' });
-    const monthFormatter = new Intl.DateTimeFormat('th-TH', { month: 'short', year: 'numeric' });
+    const monthLabels = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
     for (const formula of formulaCache) {
         if (formula.book) {
@@ -125,8 +127,15 @@ function buildAnalyticsSummary() {
 
         const parsedDate = parseFormulaDate(formula.date);
         if (parsedDate) {
-            const monthKey = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}`;
-            monthlyMap.set(monthKey, (monthlyMap.get(monthKey) || 0) + 1);
+            const year = parsedDate.getFullYear();
+            const monthIndex = parsedDate.getMonth();
+
+            if (!yearMonthMap.has(year)) {
+                yearMonthMap.set(year, Array(12).fill(0));
+            }
+
+            const countsByMonth = yearMonthMap.get(year);
+            countsByMonth[monthIndex] = (countsByMonth[monthIndex] || 0) + 1;
 
             if (!latestDate || parsedDate > latestDate) {
                 latestDate = parsedDate;
@@ -141,17 +150,19 @@ function buildAnalyticsSummary() {
     const formulasByBook = aggregateToArray(bookCounts);
     const formulasByYarnType = aggregateToArray(yarnCounts);
 
-    const monthlyTrend = Array.from(monthlyMap.entries())
-        .map(([key, count]) => {
-            const [yearStr, monthStr] = key.split('-');
-            const year = parseInt(yearStr, 10);
-            const month = parseInt(monthStr, 10) - 1;
-            const label = monthFormatter.format(new Date(year, month, 1));
-            return { label, count, sortKey: key };
-        })
-        .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
-        .slice(-12)
-        .map(({ label, count }) => ({ label, count }));
+    const sortedYears = Array.from(yearMonthMap.keys()).sort((a, b) => b - a);
+    const monthlyTrend = {
+        years: sortedYears,
+        data: {}
+    };
+
+    for (const year of sortedYears) {
+        const countsByMonth = yearMonthMap.get(year) || [];
+        monthlyTrend.data[year] = monthLabels.map((label, index) => ({
+            label,
+            count: countsByMonth[index] || 0
+        }));
+    }
 
     const topMotherCodes = Array.from(ingredientCounts.entries())
         .map(([motherCode, { count, name }]) => ({ motherCode, name, count }))
@@ -161,7 +172,6 @@ function buildAnalyticsSummary() {
     return {
         totalFormulas,
         totalBooks: bookCounts.size,
-        totalYarnTypes: yarnCounts.size,
         latestFormulaDate: latestDate ? dateFormatter.format(latestDate) : null,
         formulasByBook,
         formulasByYarnType,
@@ -320,6 +330,7 @@ function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    icon: appIcon.isEmpty() ? undefined : appIcon,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -333,6 +344,10 @@ function createWindow() {
 
 // --- App Lifecycle ---
 app.whenReady().then(() => {
+  if (!appIcon.isEmpty() && process.platform === 'darwin') {
+    app.dock.setIcon(appIcon);
+  }
+
   initializeDB();
   loadCacheFromDB();
 
