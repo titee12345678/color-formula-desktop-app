@@ -8,4 +8,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     importExcel: (filePath) => ipcRenderer.invoke('import-excel', filePath),
     downloadTemplate: () => ipcRenderer.invoke('download-template'),
     getAnalytics: () => ipcRenderer.invoke('get-analytics'),
+    wipeDatabase: (code) => ipcRenderer.invoke('wipe-database', code),
 });

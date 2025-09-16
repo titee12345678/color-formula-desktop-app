@@ -43,6 +43,7 @@
                     <button id="navMainBtn" class="nav-btn px-4 py-2 text-sm md:text-base font-semibold text-gray-700 rounded-md transition">ค้นหาสูตร</button>
                     <button id="navFormulaBtn" class="nav-btn px-4 py-2 text-sm md:text-base font-semibold text-gray-700 rounded-md transition">ค้นหาจากแม่สี</button>
                     <button id="navAnalyticsBtn" class="nav-btn px-4 py-2 text-sm md:text-base font-semibold text-gray-700 rounded-md transition">สรุปข้อมูล</button>
+                    <button id="navWipeBtn" class="nav-btn px-4 py-2 text-sm md:text-base font-semibold text-red-600 rounded-md transition">จัดการข้อมูล</button>
                     <button id="navImportBtn" class="nav-btn px-4 py-2 text-sm md:text-base font-semibold text-gray-700 rounded-md transition">Import Excel</button>
                 </div>
             </div>
@@ -199,6 +200,45 @@
         </div>
     </div>
 
+    <!-- Data Management View -->
+    <div id="wipe-view" class="hidden">
+        <div class="container mx-auto p-4 md:p-8">
+            <header class="text-center mb-8">
+                <h1 class="text-3xl md:text-4xl font-bold text-red-600">ล้างข้อมูลทั้งหมด</h1>
+                <p class="text-gray-500 mt-2">การดำเนินการนี้จะลบสูตรสีทั้งหมดออกจากฐานข้อมูลถาวร</p>
+            </header>
+            <div class="max-w-3xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-lg border border-red-200">
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6" role="alert">
+                    <strong class="font-semibold">คำเตือน:</strong>
+                    <span class="block mt-2 text-sm">หลังจากยืนยัน ข้อมูลทั้งหมดจะถูกลบและไม่สามารถกู้คืนได้ กรุณาตรวจสอบให้แน่ใจก่อนดำเนินการ</span>
+                </div>
+                <form id="wipeForm" class="space-y-6">
+                    <div>
+                        <label for="wipeCodeInput" class="block text-sm font-medium text-gray-700">รหัสยืนยันการลบ</label>
+                        <input type="password" id="wipeCodeInput" class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500" placeholder="กรอกรหัสยืนยัน" autocomplete="off" inputmode="numeric">
+                        <p class="text-xs text-gray-500 mt-2">กรอกรหัส 4 หลักเพื่อยืนยัน (จะไม่แสดงรหัสให้ทราบ)</p>
+                    </div>
+                    <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+                        <div>
+                            <p class="font-semibold text-gray-700">ผลกระทบ</p>
+                            <ul class="list-disc list-inside text-sm text-gray-600">
+                                <li>สูตรสีทั้งหมด และส่วนผสมทั้งหมดจะถูกลบ</li>
+                                <li>หลังลบต้องนำเข้าข้อมูลใหม่ด้วยไฟล์ Excel</li>
+                            </ul>
+                        </div>
+                        <div class="text-4xl text-red-500">
+                            <i class="fas fa-triangle-exclamation"></i>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <button type="submit" id="wipeConfirmBtn" class="px-5 py-3 bg-red-600 text-white font-semibold rounded-lg shadow hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">ลบข้อมูลทั้งหมด</button>
+                    </div>
+                </form>
+                <div id="wipeStatus" class="mt-4 text-center text-sm"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Import View -->
     <div id="import-view" class="hidden">
         <div class="container mx-auto p-4 md:p-8">
@@ -308,6 +348,7 @@
         const mainView = document.getElementById('main-view');
         const formulaSearchView = document.getElementById('formula-search-view');
         const analyticsView = document.getElementById('analytics-view');
+        const wipeView = document.getElementById('wipe-view');
         const importView = document.getElementById('import-view');
         const editModal = document.getElementById('editModal');
         const deleteModal = document.getElementById('deleteModal');
@@ -316,6 +357,7 @@
         const navMainBtn = document.getElementById('navMainBtn');
         const navFormulaBtn = document.getElementById('navFormulaBtn');
         const navAnalyticsBtn = document.getElementById('navAnalyticsBtn');
+        const navWipeBtn = document.getElementById('navWipeBtn');
         const navImportBtn = document.getElementById('navImportBtn');
         const mainInputs = { book: document.getElementById('bookSearch'), resultCode: document.getElementById('resultCodeSearch'), yarnType: document.getElementById('yarnTypeSearch'), yarnModel: document.getElementById('yarnModelSearch'), page: document.getElementById('pageFilter') };
         const analyticsLoading = document.getElementById('analyticsLoading');
@@ -335,6 +377,10 @@
         const analyticsBookEmpty = document.getElementById('analyticsBookEmpty');
         const analyticsYarnEmpty = document.getElementById('analyticsYarnEmpty');
         const analyticsMonthlyEmpty = document.getElementById('analyticsMonthlyEmpty');
+        const wipeStatus = document.getElementById('wipeStatus');
+        const wipeConfirmBtn = document.getElementById('wipeConfirmBtn');
+        const wipeCodeInput = document.getElementById('wipeCodeInput');
+        const wipeForm = document.getElementById('wipeForm');
         const mainResultsGrid = document.getElementById('mainResultsGrid');
         const mainResultsCount = document.getElementById('mainResultsCount');
         const mainNoResults = document.getElementById('mainNoResults');
@@ -346,11 +392,48 @@
         const formulaPagination = document.getElementById('formulaPagination');
         
         // --- API & DATA HANDLING ---
-        async function fetchFormulas() {
+        async function fetchFormulas(options = {}) {
+            const { preserveMainPage = false, preserveFormulaPage = false } = options;
+            const previousMainPage = mainCurrentPage;
+            const previousFormulaPage = formulaCurrentPage;
             try {
                 mainResultsGrid.innerHTML = '<div class="col-span-full text-center p-8"><div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-32 w-32 mx-auto"></div><p class="mt-4">กำลังโหลดข้อมูล...</p></div>';
                 allColorFormulas = await window.electronAPI.getFormulas();
-                filterMainDisplay(); 
+                if (formulaFilteredResults.length > 0) {
+                    const formulaMap = new Map(allColorFormulas.map(f => [f.id, f]));
+                    const refreshedResults = [];
+                    for (const item of formulaFilteredResults) {
+                        if (!item || typeof item !== 'object') continue;
+                        if (item.similarity !== undefined) {
+                            const updated = formulaMap.get(item.formula?.id);
+                            if (updated) {
+                                refreshedResults.push({ ...item, formula: updated });
+                            }
+                        } else {
+                            const updated = formulaMap.get(item.id);
+                            if (updated) {
+                                refreshedResults.push(updated);
+                            }
+                        }
+                    }
+                    formulaFilteredResults = refreshedResults;
+                }
+
+                filterMainDisplay({
+                    targetPage: preserveMainPage ? previousMainPage : 1
+                });
+
+                if (preserveFormulaPage) {
+                    if (formulaFilteredResults.length > 0) {
+                        const totalFormulaPages = Math.max(1, Math.ceil(formulaFilteredResults.length / ITEMS_PER_PAGE));
+                        formulaCurrentPage = Math.min(Math.max(previousFormulaPage, 1), totalFormulaPages);
+                        displayResults(formulaFilteredResults, formulaResultsGrid, formulaResultsCount, formulaNoResults, formulaPagination, formulaCurrentPage, 'formula');
+                    } else {
+                        formulaCurrentPage = 1;
+                        displayResults([], formulaResultsGrid, formulaResultsCount, formulaNoResults, formulaPagination, 1, 'formula');
+                    }
+                }
+
                 analyticsData = null;
                 if (activeView === 'analytics') {
                     renderAnalytics(true);
@@ -715,7 +798,8 @@
             containerEl.appendChild(createBtn('&raquo;', currentPage + 1, currentPage === totalPages));
         }
         
-        function filterMainDisplay() {
+        function filterMainDisplay(options = {}) {
+            const targetPage = Number.isFinite(options.targetPage) ? options.targetPage : null;
             const filters = Object.fromEntries(Object.entries(mainInputs).map(([key, input]) => [key, input.value.toLowerCase()]));
             mainFilteredResults = allColorFormulas.filter(f => 
                 (f.book ? f.book.toLowerCase().includes(filters.book) : true) &&
@@ -724,8 +808,13 @@
                 f.yarnModel.toLowerCase().includes(filters.yarnModel) &&
                 (filters.page ? f.page.toString() === filters.page : true)
             );
-            mainCurrentPage = 1;
-            displayResults(mainFilteredResults, mainResultsGrid, mainResultsCount, mainNoResults, mainPagination, 1, 'main');
+            const totalPages = Math.max(1, Math.ceil(mainFilteredResults.length / ITEMS_PER_PAGE));
+            if (targetPage && targetPage > 0) {
+                mainCurrentPage = Math.min(targetPage, totalPages);
+            } else {
+                mainCurrentPage = 1;
+            }
+            displayResults(mainFilteredResults, mainResultsGrid, mainResultsCount, mainNoResults, mainPagination, mainCurrentPage, 'main');
         }
 
         function addCriterionRow() {
@@ -802,8 +891,8 @@
 
         function setActiveView(viewName) {
             activeView = viewName;
-            const views = { main: mainView, formula: formulaSearchView, analytics: analyticsView, import: importView };
-            const buttons = { main: navMainBtn, formula: navFormulaBtn, analytics: navAnalyticsBtn, import: navImportBtn };
+            const views = { main: mainView, formula: formulaSearchView, analytics: analyticsView, wipe: wipeView, import: importView };
+            const buttons = { main: navMainBtn, formula: navFormulaBtn, analytics: navAnalyticsBtn, wipe: navWipeBtn, import: navImportBtn };
             Object.entries(views).forEach(([key, view]) => {
                 if (view) view.classList.toggle('hidden', key !== viewName);
                 const button = buttons[key];
@@ -819,6 +908,40 @@
             setTimeout(() => {
                 notificationToast.className = notificationToast.className.replace('translate-y-0 opacity-100', 'translate-y-20 opacity-0');
             }, 3000);
+        }
+
+        async function handleWipeAll(event) {
+            event.preventDefault();
+            if (!wipeForm || !wipeCodeInput || !wipeConfirmBtn || !wipeStatus) return;
+
+            const code = (wipeCodeInput.value || '').trim();
+
+            if (!code) {
+                wipeStatus.innerHTML = '<p class="text-red-600 font-semibold">กรุณากรอกรหัสยืนยันก่อน</p>';
+                return;
+            }
+
+            const originalText = wipeConfirmBtn.textContent;
+            wipeConfirmBtn.disabled = true;
+            wipeConfirmBtn.textContent = 'กำลังลบข้อมูล...';
+            wipeStatus.innerHTML = '<p class="text-blue-600">กำลังประมวลผล...</p>';
+
+            try {
+                const response = await window.electronAPI.wipeDatabase(code);
+                if (!response || response.success === false) {
+                    const message = response?.message || 'ไม่สามารถลบข้อมูลได้';
+                    wipeStatus.innerHTML = `<p class="text-red-600 font-semibold">${message}</p>`;
+                } else {
+                    wipeStatus.innerHTML = '<p class="text-green-600 font-semibold">ลบข้อมูลทั้งหมดสำเร็จ</p>';
+                    wipeCodeInput.value = '';
+                    await fetchFormulas();
+                }
+            } catch (error) {
+                wipeStatus.innerHTML = `<p class="text-red-600 font-semibold">เกิดข้อผิดพลาด: ${error.message}</p>`;
+            } finally {
+                wipeConfirmBtn.disabled = false;
+                wipeConfirmBtn.textContent = originalText;
+            }
         }
 
         // --- Color Picker Logic ---
@@ -877,7 +1000,10 @@
                 if (!result.success) throw new Error(result.message);
                 editModal.classList.add('hidden');
                 showNotification('บันทึกข้อมูลสำเร็จ!');
-                await fetchFormulas();
+                await fetchFormulas({
+                    preserveMainPage: activeView === 'main',
+                    preserveFormulaPage: activeView === 'formula'
+                });
             } catch (error) {
                 console.error("Update failed:", error);
                 showNotification('การอัปเดตล้มเหลว: ' + error.message, false);
@@ -903,7 +1029,10 @@
                 
                 deleteModal.classList.add('hidden');
                 showNotification('ลบข้อมูลสำเร็จ!');
-                await fetchFormulas();
+                await fetchFormulas({
+                    preserveMainPage: activeView === 'main',
+                    preserveFormulaPage: activeView === 'formula'
+                });
             } catch (error) {
                 console.error("Delete failed:", error);
                 showNotification(`การลบล้มเหลว: ${error.message}`, false);
@@ -980,12 +1109,16 @@
             navMainBtn.addEventListener('click', () => setActiveView('main'));
             navFormulaBtn.addEventListener('click', () => setActiveView('formula'));
             navAnalyticsBtn.addEventListener('click', () => setActiveView('analytics'));
+            navWipeBtn.addEventListener('click', () => setActiveView('wipe'));
             navImportBtn.addEventListener('click', () => setActiveView('import'));
             if (analyticsYearSelect) {
                 analyticsYearSelect.addEventListener('change', () => {
                     selectedAnalyticsYear = analyticsYearSelect.value || null;
                     refreshMonthlyChart();
                 });
+            }
+            if (wipeForm) {
+                wipeForm.addEventListener('submit', handleWipeAll);
             }
             document.getElementById('colorSearchBtn').addEventListener('click', handleColorSearch);
             document.getElementById('downloadTemplateBtn').addEventListener('click', async () => {

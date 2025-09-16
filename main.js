@@ -8,6 +8,7 @@ const Database = require('better-sqlite3');
 const DB_PATH = path.join(app.getPath('userData'), 'database.sqlite');
 const ICON_PATH = path.join(__dirname, 'image', 'icon.png');
 const appIcon = nativeImage.createFromPath(ICON_PATH);
+const DELETE_CODE = '1221';
 const db = new Database(DB_PATH);
 
 // In-memory cache for fast read operations
@@ -479,6 +480,27 @@ app.whenReady().then(() => {
       worksheet.addRow(['BN0173', 'DIANIX RED S-G01', 'D01231', 0.2120, 'PC16/2', 'DG', 'GL2506-005', new Date()]);
       await workbook.xlsx.writeFile(filePath);
       return { success: true };
+  });
+
+  ipcMain.handle('wipe-database', (event, code) => {
+      if (code !== DELETE_CODE) {
+          return { success: false, message: 'รหัสยืนยันไม่ถูกต้อง' };
+      }
+
+      try {
+          const wipeTransaction = db.transaction(() => {
+              db.prepare('DELETE FROM ingredients').run();
+              db.prepare('DELETE FROM formulas').run();
+          });
+
+          wipeTransaction();
+          db.exec('VACUUM');
+          formulaCache = [];
+          return { success: true };
+      } catch (error) {
+          console.error('Wipe database failed:', error);
+          return { success: false, message: 'ไม่สามารถลบข้อมูลทั้งหมดได้' };
+      }
   });
 
   createWindow();
