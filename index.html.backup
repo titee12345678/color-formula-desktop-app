@@ -397,8 +397,8 @@
                 <form id="wipeForm" class="space-y-6">
                     <div>
                         <label for="wipeCodeInput" class="block text-sm font-medium text-gray-700">รหัสยืนยันการลบ</label>
-                        <input type="password" id="wipeCodeInput" class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500" placeholder="กรอกรหัสยืนยัน" autocomplete="off">
-                        <p class="text-xs text-gray-500 mt-2">กรอกรหัส 4 หลักเพื่อยืนยัน: <strong>1221</strong></p>
+                        <input type="password" id="wipeCodeInput" class="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500" placeholder="กรอกรหัสยืนยัน" autocomplete="off" inputmode="numeric">
+                        <p class="text-xs text-gray-500 mt-2">กรอกรหัส 4 หลักเพื่อยืนยัน (จะไม่แสดงรหัสให้ทราบ)</p>
                     </div>
                     <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
                         <div>
@@ -499,29 +499,6 @@
         let activeView = 'main';
         let dataManagementAccess = false;
         const DATA_ACCESS_CODE = 'LAB1221';
-
-        // Helper function for refreshing main display
-        function refreshMainDisplay() {
-            if (activeView === 'main') {
-                filterMainDisplay({
-                    targetPage: mainCurrentPage
-                });
-            }
-        }
-
-        // Notification function
-        function showNotification(message, isSuccess = true) {
-            const notificationMessage = document.getElementById('notificationMessage');
-            const notificationToast = document.getElementById('notificationToast');
-
-            if (!notificationMessage || !notificationToast) return;
-
-            notificationMessage.textContent = message;
-            notificationToast.className = `fixed bottom-5 right-5 text-white py-3 px-6 rounded-lg shadow-lg transition-transform transform translate-y-0 opacity-100 z-[1001] ${isSuccess ? 'bg-green-600' : 'bg-red-600'}`;
-            setTimeout(() => {
-                notificationToast.className = notificationToast.className.replace('translate-y-0 opacity-100', 'translate-y-20 opacity-0');
-            }, 3000);
-        }
         
         // --- UI ELEMENTS ---
         const mainView = document.getElementById('main-view');
@@ -530,6 +507,8 @@
         const wipeView = document.getElementById('wipe-view');
         const editModal = document.getElementById('editModal');
         const deleteModal = document.getElementById('deleteModal');
+        const notificationToast = document.getElementById('notificationToast');
+        const notificationMessage = document.getElementById('notificationMessage');
         const navMainBtn = document.getElementById('navMainBtn');
         const navFormulaBtn = document.getElementById('navFormulaBtn');
         const navAnalyticsBtn = document.getElementById('navAnalyticsBtn');
@@ -1286,6 +1265,14 @@
             dataAccessError.className = dataAccessError.className.replace('text-red-600', 'text-green-600');
         }
 
+        function showNotification(message, isSuccess = true) {
+            notificationMessage.textContent = message;
+            notificationToast.className = `fixed bottom-5 right-5 text-white py-3 px-6 rounded-lg shadow-lg transition-transform transform translate-y-0 opacity-100 ${isSuccess ? 'bg-green-600' : 'bg-red-600'}`;
+            setTimeout(() => {
+                notificationToast.className = notificationToast.className.replace('translate-y-0 opacity-100', 'translate-y-20 opacity-0');
+            }, 3000);
+        }
+
         async function handleWipeAll(event) {
             event.preventDefault();
             if (!wipeForm || !wipeCodeInput || !wipeConfirmBtn || !wipeStatus) return;
@@ -1591,16 +1578,240 @@
                 }
             });
 
-            // Override setActiveView to handle analytics refresh
+
+
+
+                    // Main searches
+                    const mainSearchesContainer = document.getElementById('newPopularMainSearches');
+                    if (mainSearchesContainer) {
+                        mainSearchesContainer.innerHTML = '';
+                        mainSearches.slice(0, 10).forEach(term => {
+                            const termElement = document.createElement('div');
+                            termElement.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg';
+                            termElement.innerHTML = `
+                                <span class="font-medium text-gray-800">${term.search_query}</span>
+                                <span class="text-sm text-gray-500">${term.count} ครั้ง</span>
+                            `;
+                            mainSearchesContainer.appendChild(termElement);
+                        });
+                    }
+
+                    // Formula searches
+                    const formulaSearchesContainer = document.getElementById('newPopularFormulaSearches');
+                    if (formulaSearchesContainer) {
+                        formulaSearchesContainer.innerHTML = '';
+                        formulaSearches.slice(0, 10).forEach(term => {
+                            const termElement = document.createElement('div');
+                            termElement.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg';
+                            termElement.innerHTML = `
+                                <span class="font-medium text-gray-800">${term.search_query}</span>
+                                <span class="text-sm text-gray-500">${term.count} ครั้ง</span>
+                            `;
+                            formulaSearchesContainer.appendChild(termElement);
+                        });
+                    }
+                }
+
+                // Display popular formulas (both in data management and user-analytics views)
+                if (data.popularFormulas) {
+                    // For user-analytics view (new IDs)
+                    const newFormulasContainer = document.getElementById('newPopularFormulas');
+                    if (newFormulasContainer) {
+                        newFormulasContainer.innerHTML = '';
+                        if (data.popularFormulas.length === 0) {
+                            newFormulasContainer.innerHTML = '<div class="text-gray-500 text-center py-4">ยังไม่มีข้อมูลการเข้าดูสูตร</div>';
+                        } else {
+                            data.popularFormulas.slice(0, 10).forEach(formula => {
+                                const formulaElement = document.createElement('div');
+                                formulaElement.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg';
+                                formulaElement.innerHTML = `
+                                    <span class="font-medium text-gray-800">${formula.formula_id}</span>
+                                    <span class="text-sm text-gray-500">${formula.count} ครั้ง</span>
+                                `;
+                                newFormulasContainer.appendChild(formulaElement);
+                            });
+                        }
+                    }
+
+                    // For data management view (old IDs)
+                    const formulasContainer = document.getElementById('popularFormulas');
+                    if (formulasContainer) {
+                        formulasContainer.innerHTML = '';
+                        if (data.popularFormulas.length === 0) {
+                            formulasContainer.innerHTML = '<div class="text-gray-500 text-center py-4">ยังไม่มีข้อมูลการเข้าดูสูตร</div>';
+                        } else {
+                            data.popularFormulas.slice(0, 10).forEach(formula => {
+                                const formulaElement = document.createElement('div');
+                                formulaElement.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg';
+                                formulaElement.innerHTML = `
+                                    <span class="font-medium text-gray-800">${formula.formula_id}</span>
+                                    <span class="text-sm text-gray-500">${formula.count} ครั้ง</span>
+                                `;
+                                formulasContainer.appendChild(formulaElement);
+                            });
+                        }
+                    }
+                }
+
+                // Display popular yarn types (both views)
+                if (data.popularYarnTypes) {
+                    // For user-analytics view (new IDs)
+                    const newYarnContainer = document.getElementById('newPopularYarnTypes');
+                    if (newYarnContainer) {
+                        newYarnContainer.innerHTML = '';
+                        if (data.popularYarnTypes.length === 0) {
+                            newYarnContainer.innerHTML = '<div class="text-gray-500 text-center py-4">ยังไม่มีข้อมูลการค้นหาชนิดด้าย</div>';
+                        } else {
+                            data.popularYarnTypes.slice(0, 10).forEach(yarn => {
+                                const yarnElement = document.createElement('div');
+                                yarnElement.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg';
+                                yarnElement.innerHTML = `
+                                    <span class="font-medium text-gray-800">${yarn.yarn_type}</span>
+                                    <span class="text-sm text-gray-500">${yarn.count} ครั้ง</span>
+                                `;
+                                newYarnContainer.appendChild(yarnElement);
+                            });
+                        }
+                    }
+
+                    // For data management view (old IDs)
+                    const yarnContainer = document.getElementById('popularYarnTypes');
+                    if (yarnContainer) {
+                        yarnContainer.innerHTML = '';
+                        if (data.popularYarnTypes.length === 0) {
+                            yarnContainer.innerHTML = '<div class="text-gray-500 text-center py-4">ยังไม่มีข้อมูลการค้นหาชนิดด้าย</div>';
+                        } else {
+                            data.popularYarnTypes.slice(0, 10).forEach(yarn => {
+                                const yarnElement = document.createElement('div');
+                                yarnElement.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg';
+                                yarnElement.innerHTML = `
+                                    <span class="font-medium text-gray-800">${yarn.yarn_type}</span>
+                                    <span class="text-sm text-gray-500">${yarn.count} ครั้ง</span>
+                                `;
+                                yarnContainer.appendChild(yarnElement);
+                            });
+                        }
+                    }
+                }
+
+                // Display monthly usage chart for both views
+                if (data.usageTimeline) {
+                    renderNewUsageChart(data.usageTimeline);
+                    renderUsageChart(data.usageTimeline); // Also render for data management page
+                }
+
+                // Display summary statistics
+                if (data.totalSessions) {
+                    const sessionsElement = document.getElementById('newTotalSessions');
+                    if (sessionsElement) sessionsElement.textContent = data.totalSessions;
+                }
+            }
+
+            function renderUsageChart(monthlyData) {
+                const ctx = document.getElementById('usageTimelineChart');
+                if (!ctx || !window.Chart) return;
+
+                const labels = monthlyData.map(item => item.month);
+                const data = monthlyData.map(item => item.count);
+
+                // Clear any existing chart
+                if (window.usageTimelineChart) {
+                    window.usageTimelineChart.destroy();
+                }
+
+                window.usageTimelineChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'การใช้งานรายเดือน',
+                            data: data,
+                            borderColor: 'rgb(147, 51, 234)',
+                            backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'สถิติการใช้งานรายเดือน'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            function renderNewUsageChart(monthlyData) {
+                const ctx = document.getElementById('newUsageTimelineChart');
+                if (!ctx || !window.Chart) return;
+
+                const labels = monthlyData.map(item => item.month);
+                const data = monthlyData.map(item => item.count);
+
+                // Clear any existing chart
+                if (window.newUsageTimelineChart) {
+                    window.newUsageTimelineChart.destroy();
+                }
+
+                window.newUsageTimelineChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'การใช้งานรายเดือน',
+                            data: data,
+                            borderColor: 'rgb(6, 182, 212)',
+                            backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'สถิติการใช้งานรายเดือน'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Log user activity on page navigation
+            function logPageNavigation(viewName) {
+                if (window.electronAPI && window.electronAPI.logUserActivity) {
+                    window.electronAPI.logUserActivity('navigate', {
+                        category: 'navigation',
+                        viewName: viewName
+                    });
+                }
+            }
+
+            // Override setActiveView to include logging and analytics loading
             const originalSetActiveView = setActiveView;
             setActiveView = function(viewName) {
                 originalSetActiveView(viewName);
+                logPageNavigation(viewName);
+
+                // Load analytics data when entering analytics views
                 if (viewName === 'analytics') {
-                    renderAnalytics(true);
+                    renderAnalytics(true); // Force refresh analytics data
                 }
             };
         });
     </script>
 </body>
 </html>
-

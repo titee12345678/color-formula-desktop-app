@@ -9,4 +9,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     downloadTemplate: () => ipcRenderer.invoke('download-template'),
     getAnalytics: () => ipcRenderer.invoke('get-analytics'),
     wipeDatabase: (code) => ipcRenderer.invoke('wipe-database', code),
+    exportSQLite: () => ipcRenderer.invoke('export-sqlite'),
+    exportExcel: () => ipcRenderer.invoke('export-excel'),
+    logUserActivity: (action, data) => ipcRenderer.invoke('log-user-activity', action, data),
 });
