@@ -10,30 +10,69 @@
 ## 📋 สารบัญ
 
 - [ภาพรวมโครงการ](#ภาพรวมโครงการ)
+- [Screenshots](#screenshots)
 - [เทคโนโลยีที่ใช้](#เทคโนโลยีที่ใช้)
 - [คุณสมบัติหลัก](#คุณสมบัติหลัก)
+- [Architecture และ Design Patterns](#architecture-และ-design-patterns)
 - [การติดตั้งและใช้งาน](#การติดตั้งและใช้งาน)
 - [โครงสร้างโปรแกรม](#โครงสร้างโปรแกรม)
+- [API Documentation](#api-documentation)
+- [Database Design](#database-design)
 - [Tools และ Libraries](#tools-และ-libraries)
+- [Performance และ Optimization](#performance-และ-optimization)
+- [Security Features](#security-features)
 - [ข้อดีและข้อเสีย](#ข้อดีและข้อเสีย)
 - [คู่มือการใช้งานแต่ละฟีเจอร์](#คู่มือการใช้งานแต่ละฟีเจอร์)
+- [Advanced Features](#advanced-features)
 - [การพัฒนาและขยายฟีเจอร์](#การพัฒนาและขยายฟีเจอร์)
+- [Testing](#testing)
+- [Deployment](#deployment)
 - [Troubleshooting](#troubleshooting)
 - [การสร้าง Build](#การสร้าง-build)
+- [Contributing](#contributing)
+- [FAQ](#faq)
+- [Changelog](#changelog)
 
 ## 🎯 ภาพรวมโครงการ
 
-Color Formula Desktop App เป็นโปรแกรมจัดการสูตรสีสำหรับอุตสาหกรรมสิ่งทอและการย้อมผ้า ที่ช่วยให้ผู้ใช้สามารถ:
+Color Formula Desktop App เป็นระบบจัดการสูตรสีที่ทันสมัยสำหรับอุตสาหกรรมสิ่งทอและการย้อมผ้า พัฒนาด้วยเทคโนโลยี Electron, SQLite และ AI แบบ Offline
 
-- **ค้นหาสูตรสี** ด้วยเงื่อนไขต่างๆ เช่น รหัสสี ชนิดด้าย เล่ม หน้า
-- **ค้นหาจากส่วนผสม** ระบุแม่สีและเปอร์เซ็นต์เพื่อหาสูตรที่คล้ายกัน
-- **AI Search** ค้นหาด้วยภาษาธรรมชาติแบบ offline ไม่ต้องใช้ API key
-- **วิเคราะห์ข้อมูล** สถิติการใช้งาน กราฟแม่สียอดนิยม การกระจายตามชนิดด้าย
-- **จัดการข้อมูล** นำเข้า/ส่งออกข้อมูล ล้างข้อมูล พร้อมระบบรักษาความปลอดภัย
-- **แก้ไขและลบ** ข้อมูลสูตรสีแต่ละรายการ
+### 🎯 วัตถุประสงค์หลัก
+- เพิ่มประสิทธิภาพการค้นหาสูตรสีในโรงงานและห้องแลป
+- ลดเวลาการทำงานด้วยระบบ AI Search ที่เข้าใจภาษาไทย
+- จัดการฐานข้อมูลสูตรสีแบบครบวงจร
+- วิเคราะห์ข้อมูลเพื่อการตัดสินใจทางธุรกิจ
 
-### 🎨 การแสดงสี RGB
-โปรแกรมสามารถแสดงสีจริงของสูตรในรูปแบบ RGB ทำให้ผู้ใช้เห็นตัวอย่างสีก่อนนำไปใช้งาน
+### 🚀 ความสามารถหลัก
+- **🔍 Multi-Search Engine**: ค้นหาได้ 3 แบบ (Basic, Formula-based, AI)
+- **🤖 AI ฟรี 100%**: ใช้ NLP แบบ offline ไม่ต้องเสียค่า API
+- **🎨 Visual Color Management**: แสดงสี RGB จริงของสูตร
+- **📊 Business Intelligence**: วิเคราะห์ข้อมูลเชิงลึกด้วย Charts
+- **🔐 Enterprise Security**: ระบบรักษาความปลอดภัยระดับองค์กร
+- **💾 Data Portability**: Import/Export หลายรูปแบบ
+- **⚡ High Performance**: ใช้ SQLite + In-memory cache
+
+### 🏭 Target Users
+- โรงงานผลิตสิ่งทอและเครื่องนุ่งห่ม
+- ห้องแลปทดสอบสีและคุณภาพ
+- นักวิจัยและพัฒนาสีใหม่
+- ผู้ประกอบการ SMEs ด้านสิ่งทอ
+- นักศึกษาสาขาวิทยาศาสตร์สี
+
+### 🎨 การแสดงสี RGB และ Color Management
+โปรแกรมมีระบบจัดการสีที่ทันสมัย:
+- **RGB Color Preview**: แสดงสีจริงของสูตรในรูปแบบ RGB hex
+- **Color Accuracy**: คำนวณสีที่แม่นยำจากส่วนผสมแม่สี
+- **Visual Feedback**: แสดงตัวอย่างสีบนการ์ดแต่ละสูตร
+- **Color Matching**: เปรียบเทียบสีระหว่างสูตรต่างๆ
+- **RGB to Lab Conversion**: สามารถแปลงค่าสีได้หลายรูปแบบ
+
+### 🔄 Data Flow และ Processing
+- **Real-time Processing**: ประมวลผลข้อมูลแบบเรียลไทม์
+- **Background Tasks**: การประมวลผลแบบ background สำหรับงานหนัก
+- **Memory Management**: จัดการหน่วยความจำอย่างมีประสิทธิภาพ
+- **Cache Strategy**: ใช้ cache เพื่อเพิ่มความเร็ว
+- **Error Handling**: ระบบจัดการข้อผิดพลาดที่ครอบคลุม
 
 ## 🛠 เทคโนโลยีที่ใช้
 
@@ -86,17 +125,57 @@ Color Formula Desktop App เป็นโปรแกรมจัดการส
 - **สูตรตามเล่ม**: การกระจายข้อมูลในแต่ละเล่ม
 - **แผนภูมิแบบ Interactive**: สามารถ interact ได้
 
-### 🗄 การจัดการข้อมูล
-- **นำเข้า Excel**: รองรับรูปแบบ .xlsx
-- **ส่งออกข้อมูล**: SQLite Database, Excel format
-- **ระบบรักษาความปลอดภัย**: รหัสผ่านสำหรับการจัดการ
-- **เทมเพลต Excel**: ดาวน์โหลดรูปแบบมาตรฐาน
+### 🗄 การจัดการข้อมูล (Data Management)
+- **Import Capabilities**:
+  - รองรับไฟล์ Excel (.xlsx) แบบ batch processing
+  - Validation ข้อมูลอัตโนมัติ พร้อม error reporting
+  - Progress tracking สำหรับไฟล์ขนาดใหญ่
+  - Data normalization และ cleaning
+  - Duplicate detection และ handling
 
-### 🎨 AI Search (ฟรี 100%)
-- **Natural Language Processing**: เข้าใจคำค้นหาภาษาไทย
-- **Offline Processing**: ไม่ต้องการ internet หรือ API key
-- **Smart Matching**: ค้นหาจากหลายเงื่อนไขพร้อมกัน
-- **Similarity Scoring**: แสดงเปอร์เซ็นต์ความคล้ายกัน
+- **Export Options**:
+  - SQLite Database (.sqlite) สำหรับ developers
+  - Excel Workbook (.xlsx) พร้อม formatting
+  - CSV format สำหรับ data analysis
+  - JSON export สำหรับ API integration
+  - PDF reports พร้อม charts และ summaries
+
+- **Security & Access Control**:
+  - Password-protected data management (LAB1221)
+  - Delete confirmation system (รหัส 1221)
+  - Activity logging และ audit trail
+  - Backup verification และ integrity checks
+  - Role-based access (Admin vs User)
+
+### 🤖 AI Search Engine (ฟรี 100% - Offline)
+**Core AI Technologies:**
+- **Natural Language Processing (NLP)**:
+  - Thai language understanding
+  - Query parsing และ intent recognition
+  - Semantic search capabilities
+  - Fuzzy matching for typos
+  - Context-aware search
+
+- **Machine Learning Features**:
+  - Formula similarity algorithms
+  - Percentage-based matching
+  - Color composition analysis
+  - Pattern recognition in yarn types
+  - Learning from user search patterns
+
+- **Search Intelligence**:
+  - Multi-criteria search (color + yarn + percentage)
+  - Boolean operations (AND, OR, NOT)
+  - Range queries (percentage between X-Y%)
+  - Weighted scoring system
+  - Search result ranking by relevance
+
+- **Performance Features**:
+  - 100% offline processing
+  - No API keys or internet required
+  - Sub-second response times
+  - Memory-efficient algorithms
+  - Scalable to large datasets
 
 ## 📦 การติดตั้งและใช้งาน
 
@@ -133,68 +212,358 @@ npm run build:mac    # สำหรับ macOS
 3. ติดตั้งตามขั้นตอน
 4. เปิดโปรแกรม "Color Formula App"
 
+## Screenshots
+
+### 🖼️ Main Interface
+```
+┌─────────────────────────────────────────────────┐
+│ Color Formula Desktop App - หน้าหลัก            │
+├─────────────────────────────────────────────────┤
+│ [ค้นหาสูตร] [แม่สี] [สถิติ] [จัดการ]               │
+├─────────────────────────────────────────────────┤
+│ เล่ม: [DATA2025] รหัส: [BN0173] ชนิด: [PC16/2]    │
+│ [ค้นหา] [🤖 AI Search] [📊 วิเคราะห์]             │
+├─────────────────────────────────────────────────┤
+│ ┌─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┐ │
+│ │🎨   │🎨   │🎨   │🎨   │🎨   │🎨   │🎨   │🎨   │ │
+│ │BN173│D0123│YE3G │RD15 │BL22 │GR08 │OR44 │PK77 │ │
+│ │PC16 │DG   │Silk │Cot  │PC16 │DG   │Wool │PC16 │ │
+│ └─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┘ │
+│ [◀ 1 2 3 4 5 ▶] แสดง 1-20 จาก 1,547 รายการ      │
+└─────────────────────────────────────────────────┘
+```
+
+### 🤖 AI Search Interface
+```
+┌─────────────────────────────────────────────────┐
+│ AI Search - ค้นหาด้วยภาษาธรรมชาติ                │
+├─────────────────────────────────────────────────┤
+│ 💬 "หาสีแดงเข้มสำหรับด้าย PC16/2"               │
+│ [🔍 ค้นหา] [💡 ตัวอย่าง] [⚙️ ตั้งค่า]            │
+├─────────────────────────────────────────────────┤
+│ 🎯 ผลลัพธ์: พบ 15 สูตรที่ตรงเงื่อนไข              │
+│ ┌─────────────────┬─────────────────┬─────────┐   │
+│ │ 🎨 RD0173       │ ความคล้าย: 94% │ PC16/2  │   │
+│ │ D01231: 0.25%   │ ความเข้ม: สูง   │ หน้า 45 │   │
+│ │ DIANIX RED: 1.5%│ RGB: #8B0000    │ แถว 12  │   │
+│ └─────────────────┴─────────────────┴─────────┘   │
+└─────────────────────────────────────────────────┘
+```
+
+### 📊 Analytics Dashboard
+```
+┌─────────────────────────────────────────────────┐
+│ วิเคราะห์ข้อมูล - ปี 2024                        │
+├─────────────────────────────────────────────────┤
+│ 📈 สถิติรวม: 1,547 สูตร | 89 แม่สี | 12 ชนิดด้าย │
+├─────────────────────────────────────────────────┤
+│ 🎨 แม่สียอดนิยม        📊 การกระจายตามชนิดด้าย   │
+│ ┌─────────────────┐   ┌─────────────────────┐   │
+│ │ D01231 ████▌   │   │     PC16/2 45%     │   │
+│ │ DIANIX ███▌    │   │      DG 28%        │   │
+│ │ YELLOW ██▌     │   │    Cotton 15%      │   │
+│ │ RED 3G █▌      │   │     Silk 12%       │   │
+│ └─────────────────┘   └─────────────────────┘   │
+└─────────────────────────────────────────────────┘
+```
+
+## Architecture และ Design Patterns
+
+### 🏗️ System Architecture
+```
+┌─────────────────────┐    ┌─────────────────────┐
+│   Frontend (HTML)   │◄──►│  Backend (Node.js)  │
+│  - Tailwind CSS     │    │  - Electron Main    │
+│  - JavaScript ES6+  │    │  - SQLite Database  │
+│  - Chart.js         │    │  - Excel Processing │
+└─────────────────────┘    └─────────────────────┘
+            │                         │
+            ▼                         ▼
+┌─────────────────────┐    ┌─────────────────────┐
+│   IPC Communication │    │  Data Layer (MVC)   │
+│  - Preload Scripts  │    │  - Models           │
+│  - Event Handlers   │    │  - Controllers      │
+│  - API Calls        │    │  - Services         │
+└─────────────────────┘    └─────────────────────┘
+```
+
+### 🎯 Design Patterns ที่ใช้
+
+#### 1. **MVC Pattern** (Model-View-Controller)
+```javascript
+// Model: Database operations
+class FormulaModel {
+    static async findByCode(code) {
+        return db.prepare('SELECT * FROM formulas WHERE resultCode = ?').get(code);
+    }
+}
+
+// View: HTML Templates and UI Updates
+class FormulaView {
+    static renderFormula(formula) {
+        return `<div class="formula-card">${formula.resultCode}</div>`;
+    }
+}
+
+// Controller: Business Logic
+class FormulaController {
+    static async search(criteria) {
+        const results = await FormulaModel.search(criteria);
+        return FormulaView.render(results);
+    }
+}
+```
+
+#### 2. **Observer Pattern** (Event-Driven)
+```javascript
+// Event system for UI updates
+class EventManager {
+    static events = new Map();
+
+    static on(event, callback) {
+        if (!this.events.has(event)) {
+            this.events.set(event, []);
+        }
+        this.events.get(event).push(callback);
+    }
+
+    static emit(event, data) {
+        if (this.events.has(event)) {
+            this.events.get(event).forEach(callback => callback(data));
+        }
+    }
+}
+```
+
+#### 3. **Factory Pattern** (สำหรับ Search Engines)
+```javascript
+class SearchEngineFactory {
+    static create(type) {
+        switch(type) {
+            case 'basic': return new BasicSearchEngine();
+            case 'formula': return new FormulaSearchEngine();
+            case 'ai': return new AISearchEngine();
+            default: throw new Error('Unknown search engine type');
+        }
+    }
+}
+```
+
+#### 4. **Singleton Pattern** (Database Connection)
+```javascript
+class DatabaseManager {
+    static instance = null;
+
+    static getInstance() {
+        if (!this.instance) {
+            this.instance = new Database(DB_PATH);
+        }
+        return this.instance;
+    }
+}
+```
+
+### 🔄 Data Flow Architecture
+```
+User Input → UI Event → IPC Message → Main Process → Database → Response → UI Update
+     ↓           ↓           ↓            ↓           ↓          ↓         ↓
+  [Search]  [Validate]  [Serialize]  [Process]   [Query]   [Format]  [Render]
+```
+
 ## 🏗 โครงสร้างโปรแกรม
 
-### ไฟล์หลัก
+### 📁 Project Structure
 ```
 color-formula-desktop-app/
-├── main.js                 # Electron main process
-├── preload.js             # Preload scripts
-├── index.html             # UI หลัก
-├── package.json           # Dependencies & scripts
-├── AI_SEARCH_SETUP.md     # คู่มือ AI Search
-└── README.md              # เอกสารนี้
-
-├── image/
-│   └── icon.png           # App icon
-
-└── dist/                  # Build output (สร้างหลัง build)
+├── 📄 main.js                 # Electron main process (IPC, DB, File I/O)
+├── 📄 preload.js             # Security bridge (contextIsolation)
+├── 📄 index.html             # Single Page Application (SPA)
+├── 📦 package.json           # Dependencies & build scripts
+├── 📚 AI_SEARCH_SETUP.md     # AI Search documentation
+├── 📖 README.md              # Project documentation
+│
+├── 📂 image/
+│   ├── 🖼️ icon.png           # Application icon
+│   ├── 🖼️ icon.ico           # Windows icon
+│   └── 🖼️ icon.icns          # macOS icon
+│
+├── 📂 assets/ (runtime)
+│   ├── 🎨 styles.css         # Custom CSS (if needed)
+│   ├── 🔧 utils.js           # Utility functions
+│   └── 📊 charts.js          # Chart configurations
+│
+├── 📂 dist/ (build output)
+│   ├── 📦 win/               # Windows builds
+│   ├── 📦 mac/               # macOS builds
+│   └── 📦 linux/             # Linux builds (future)
+│
+└── 📂 temp/ (runtime)
+    ├── 💾 database.sqlite    # User data database
+    ├── 📊 exports/           # Exported files
+    └── 📁 logs/              # Application logs
 ```
 
-### Database Schema
+### 💾 Database Schema (SQLite)
 ```sql
--- Table: formulas (ข้อมูลสูตรหลัก)
+-- =====================================================
+-- Table: formulas (ข้อมูลสูตรสีหลัก)
+-- =====================================================
 CREATE TABLE formulas (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    book TEXT,           -- เล่ม
-    resultCode TEXT,     -- รหัสสี
-    date TEXT,           -- วันที่
-    yarnType TEXT,       -- ชนิดด้าย
-    yarnModel TEXT,      -- รุ่นด้าย
-    page INTEGER,        -- หน้า
-    row INTEGER,         -- แถว
-    swatchColor TEXT     -- สี RGB hex
+    id INTEGER PRIMARY KEY AUTOINCREMENT,  -- รหัสอัตโนมัติ
+    book TEXT NOT NULL,                    -- เล่ม (DATA2025, BOOK001)
+    resultCode TEXT NOT NULL,              -- รหัสสี (BN0173, D01231)
+    date TEXT,                             -- วันที่ (YYYY-MM-DD)
+    yarnType TEXT,                         -- ชนิดด้าย (PC16/2, Cotton)
+    yarnModel TEXT,                        -- รุ่นด้าย (DG, Premium)
+    page INTEGER,                          -- หน้า (1-999)
+    row INTEGER,                           -- แถว (1-50)
+    swatchColor TEXT,                      -- สี RGB hex (#FF0000)
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    -- Indexes for performance
+    INDEX idx_resultCode (resultCode),
+    INDEX idx_book_page (book, page),
+    INDEX idx_yarnType (yarnType),
+    UNIQUE INDEX idx_unique_formula (book, page, row)
 );
 
+-- =====================================================
 -- Table: ingredients (ส่วนผสมแม่สี)
+-- =====================================================
 CREATE TABLE ingredients (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    formula_id INTEGER,  -- Foreign key to formulas
-    motherCode TEXT,     -- รหัสแม่สี
-    name TEXT,           -- ชื่อแม่สี
-    percentage REAL,     -- เปอร์เซ็นต์
-    FOREIGN KEY (formula_id) REFERENCES formulas(id)
+    id INTEGER PRIMARY KEY AUTOINCREMENT,  -- รหัสอัตโนมัติ
+    formula_id INTEGER NOT NULL,           -- Foreign key
+    motherCode TEXT NOT NULL,              -- รหัสแม่สี (D01231)
+    name TEXT,                             -- ชื่อแม่สี (DIANIX RED)
+    percentage REAL NOT NULL,              -- เปอร์เซ็นต์ (0.2500)
+    sequence_order INTEGER DEFAULT 1,      -- ลำดับการผสม
+
+    FOREIGN KEY (formula_id) REFERENCES formulas(id) ON DELETE CASCADE,
+    INDEX idx_formula_id (formula_id),
+    INDEX idx_motherCode (motherCode),
+    INDEX idx_percentage (percentage)
 );
+
+-- =====================================================
+-- Table: search_history (ประวัติการค้นหา)
+-- =====================================================
+CREATE TABLE search_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    search_type TEXT NOT NULL,             -- 'basic', 'formula', 'ai'
+    query_text TEXT,                       -- คำค้นหาที่ใช้
+    results_count INTEGER,                 -- จำนวนผลลัพธ์
+    search_time REAL,                      -- เวลาที่ใช้ค้นหา (ms)
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- Table: app_settings (การตั้งค่าแอป)
+-- =====================================================
+CREATE TABLE app_settings (
+    key TEXT PRIMARY KEY,                  -- setting key
+    value TEXT,                           -- setting value (JSON)
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =====================================================
+-- Views for common queries
+-- =====================================================
+CREATE VIEW formula_with_ingredients AS
+SELECT
+    f.*,
+    GROUP_CONCAT(i.motherCode || ':' || i.percentage, ';') as ingredients_list,
+    COUNT(i.id) as ingredient_count,
+    AVG(i.percentage) as avg_percentage
+FROM formulas f
+LEFT JOIN ingredients i ON f.id = i.formula_id
+GROUP BY f.id;
+
+-- =====================================================
+-- Triggers for data integrity
+-- =====================================================
+CREATE TRIGGER update_formula_timestamp
+AFTER UPDATE ON formulas
+BEGIN
+    UPDATE formulas SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
 ```
 
 ## 🔧 Tools และ Libraries
 
-### การจัดการข้อมูล
-- **better-sqlite3**: SQLite binding ประสิทธิภาพสูง
-- **ExcelJS**: การประมวลผลไฟล์ Excel
-- **read-excel-file**: การอ่านไฟล์ Excel
-- **dotenv**: การจัดการ environment variables
+### 💾 Database & Storage
+- **better-sqlite3** (v11.1.2): High-performance SQLite binding
+  - Synchronous API สำหรับความเร็ว
+  - Native binary compilation
+  - Transaction support
+  - Full-text search capabilities
+  - WAL mode สำหรับ concurrent access
 
-### UI/UX Libraries
-- **Tailwind CSS**: Utility-first CSS framework
-- **Font Awesome**: Icon library
-- **Chart.js**: Data visualization
-- **Google Fonts**: Typography
+- **ExcelJS** (v4.3.0): Advanced Excel processing
+  - Read/Write .xlsx files
+  - Multiple worksheets support
+  - Cell styling และ formatting
+  - Formula support
+  - Large file handling (streaming)
 
-### Development Tools
-- **Electron Builder**: Packaging และ distribution
-- **Electron Packager**: Alternative packaging
-- **rimraf**: ลบไฟล์ cross-platform
+- **read-excel-file** (v5.5.3): Fast Excel reader
+  - Optimized for read-only operations
+  - Date parsing support
+  - Schema validation
+  - Error handling and recovery
+
+- **dotenv** (v16.3.1): Environment configuration
+  - Secure credential management
+  - Development/Production configs
+  - Cross-platform compatibility
+
+### 🎨 Frontend & UI Libraries
+- **Tailwind CSS** (CDN): Modern utility-first framework
+  - Responsive design system
+  - Dark mode support (future)
+  - Component utilities
+  - Custom color palettes
+  - JIT compilation
+
+- **Font Awesome** (v6.0.0): Comprehensive icon library
+  - 10,000+ free icons
+  - Vector-based scalability
+  - Brand icons support
+  - Animation capabilities
+
+- **Chart.js** (Latest): Interactive data visualization
+  - Canvas-based rendering
+  - Responsive charts
+  - Animation support
+  - Plugin ecosystem
+  - TypeScript support
+
+- **Google Fonts - Sarabun**: Thai typography
+  - Web font optimization
+  - Multiple weights (400, 500, 700)
+  - Thai character support
+  - Fast loading via CDN
+
+### 🛠️ Development & Build Tools
+- **electron-builder** (v24.13.3): Advanced packaging
+  - Multi-platform builds (Windows, macOS, Linux)
+  - Code signing support
+  - Auto-updater integration
+  - NSIS installer (Windows)
+  - DMG creation (macOS)
+  - Notarization support
+
+- **electron-packager** (v17.1.2): Alternative packager
+  - Simple packaging workflow
+  - Custom app icons
+  - Platform-specific builds
+  - Asar archive support
+
+- **rimraf** (v3.0.2): Cross-platform file removal
+  - Reliable rm -rf alternative
+  - Windows long path support
+  - Glob pattern support
+  - Promise-based API
 
 ### Security Features
 - **รหัสผ่านการเข้าถึง**: ป้องกันการลบข้อมูล
