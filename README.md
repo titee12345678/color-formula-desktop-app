@@ -480,4 +480,4 @@ Color Formula เป็นโซลูชันที่ครอบคลุม
 **ผู้พัฒนา:** Tee Jakkrit
 **เวอร์ชัน:** 1.1.0
 **อัปเดตล่าสุด:** 2024
-**License:** ISC
+**License:** Tee Jakkrit
